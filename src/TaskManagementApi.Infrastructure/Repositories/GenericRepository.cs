@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using TaskManagementApi.Infrastructure.Persistence;
 using TaskManagementApi.Application.Interfaces;
+using TaskManagementApi.Domain.Entities;
+using System.Linq.Expressions;
 
 namespace TaskManagementApi.Infrastructure.Repositories
 {
-    public class GenericRepository<T> : IRepository<T> where T : class
+    public class GenericRepository<T> : IRepository<T> where T : BaseEntity
     {
         protected readonly ApplicationDbContext _context;
         protected readonly DbSet<T> _dbSet;
@@ -17,12 +19,12 @@ namespace TaskManagementApi.Infrastructure.Repositories
 
         public async Task<IEnumerable<T>> GetAllAsync()
         {
-            return await _dbSet.ToListAsync();
+            return await _dbSet.Where(e => !e.IsDeleted).ToListAsync();
         }
 
         public async Task<T?> GetByIdAsync(int id)
         {
-            return await _dbSet.FindAsync(id);
+            return await _dbSet.FirstOrDefaultAsync(e => e.Id == id && !e.IsDeleted);
         }
 
         public async Task AddAsync(T entity)
@@ -42,9 +44,16 @@ namespace TaskManagementApi.Infrastructure.Repositories
             var entity = await _dbSet.FindAsync(id);
             if (entity != null)
             {
-                _dbSet.Remove(entity);
+                entity.IsDeleted = true;
+                entity.DeletedAt = DateTime.UtcNow;
+                _dbSet.Update(entity);
                 await _context.SaveChangesAsync();
             }
+        }
+
+        public IQueryable<T> Query()
+        {
+            return _dbSet.Where(e => !e.IsDeleted);
         }
     }
 }

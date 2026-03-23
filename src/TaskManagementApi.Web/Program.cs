@@ -5,6 +5,8 @@ using TaskManagementApi.Application.Interfaces;
 using TaskManagementApi.Application.Services;
 using TaskManagementApi.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +21,12 @@ builder.Services.AddIdentity<User, Role>()
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<ITicketService, TicketService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<ISubProjectService, SubProjectService>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<IProjectService>();
+builder.Services.AddFluentValidationAutoValidation();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
