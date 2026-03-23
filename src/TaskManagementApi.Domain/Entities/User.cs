@@ -16,5 +16,7 @@ namespace TaskManagementApi.Domain.Entities
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLoginAt { get; set; }
+
+        public ICollection<UserProjectRole> UserProjectRoles { get; set; } = new List<UserProjectRole>();
     }
 }
