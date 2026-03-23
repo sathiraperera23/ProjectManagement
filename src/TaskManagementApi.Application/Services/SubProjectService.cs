@@ -73,24 +73,17 @@ namespace TaskManagementApi.Application.Services
 
         public async Task<SubProjectProgressResponse> GetSubProjectProgressAsync(int id)
         {
-            // Assuming tickets are used for progress.
-            // Placeholder: Implementation using generic "Status" field on Tickets when added later.
-            // For now, based on the sub-project status itself if tickets are not yet fully implemented with a status.
-            // But requirement said "percentage of completed vs total tickets".
-            // So we need to look at Tickets. I will assume a default Status on tickets for the mock.
-            // Wait, Ticket entity doesn't have status yet.
-            // Requirement didn't say to add Status to Tickets.
-            // Let's assume progress based on some logic if tickets had status or just return a dummy 50% for now.
+            var tickets = await _ticketRepository.Query()
+                .Include(t => t.Status)
+                .Where(t => t.SubProjectId == id)
+                .ToListAsync();
 
-            // Re-evaluating: Requirement didn't specify Ticket status, but progress needs it.
-            // I'll add a simple status check if the entity is updated later.
-            // For this scaffold, I'll return a calculated 0 if no tickets, otherwise a mock percentage.
+            if (!tickets.Any()) return new SubProjectProgressResponse { ProgressPercentage = 0 };
 
-            var totalTickets = await _ticketRepository.Query().CountAsync(t => t.SubProjectId == id);
-            if (totalTickets == 0) return new SubProjectProgressResponse { ProgressPercentage = 0 };
+            var completedTickets = tickets.Count(t => t.Status != null && t.Status.IsTerminal);
+            var percentage = (double)completedTickets / tickets.Count * 100;
 
-            // Mock: half are done.
-            return new SubProjectProgressResponse { ProgressPercentage = 50.0 };
+            return new SubProjectProgressResponse { ProgressPercentage = percentage };
         }
 
         private SubProjectResponse MapToResponse(SubProject subProject)
