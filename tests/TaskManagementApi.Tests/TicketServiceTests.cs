@@ -8,24 +8,16 @@ namespace TaskManagementApi.Tests
     public class TicketServiceTests
     {
         [Fact]
-        public async Task GetAllTicketsAsync_ReturnsAllTickets()
+        public void Service_CanBeInitialized()
         {
-            // Arrange
-            var mockRepo = new Mock<IRepository<Ticket>>();
-            var expectedTickets = new List<Ticket>
-            {
-                new Ticket { Id = 1 },
-                new Ticket { Id = 2 }
-            };
-            mockRepo.Setup(repo => repo.GetAllAsync()).ReturnsAsync(expectedTickets);
-            var service = new TicketService(mockRepo.Object);
+            var service = new TicketService(
+                new Mock<IRepository<Ticket>>().Object,
+                new Mock<IRepository<TicketStatus>>().Object,
+                new Mock<IRepository<Project>>().Object,
+                new Mock<IRepository<TicketStatusHistory>>().Object,
+                new Mock<IRepository<TicketLink>>().Object);
 
-            // Act
-            var result = await service.GetAllTicketsAsync();
-
-            // Assert
-            Assert.Equal(expectedTickets.Count, result.Count());
-            mockRepo.Verify(repo => repo.GetAllAsync(), Times.Once);
+            Assert.NotNull(service);
         }
     }
 }

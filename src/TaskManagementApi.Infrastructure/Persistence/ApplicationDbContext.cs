@@ -17,6 +17,11 @@ namespace TaskManagementApi.Infrastructure.Persistence
         public DbSet<Product> Products { get; set; } = null!;
         public DbSet<SubProject> SubProjects { get; set; } = null!;
         public DbSet<Ticket> Tickets { get; set; } = null!;
+        public DbSet<TicketStatus> TicketStatuses { get; set; } = null!;
+        public DbSet<TicketStatusHistory> TicketStatusHistories { get; set; } = null!;
+        public DbSet<TicketLink> TicketLinks { get; set; } = null!;
+        public DbSet<TicketAssignee> TicketAssignees { get; set; } = null!;
+        public DbSet<TicketLabel> TicketLabels { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -26,6 +31,7 @@ namespace TaskManagementApi.Infrastructure.Persistence
             builder.Entity<Product>().HasQueryFilter(e => !e.IsDeleted);
             builder.Entity<SubProject>().HasQueryFilter(e => !e.IsDeleted);
             builder.Entity<Ticket>().HasQueryFilter(e => !e.IsDeleted);
+            builder.Entity<TicketStatus>().HasQueryFilter(e => !e.IsDeleted);
 
             builder.Entity<Project>()
                 .HasIndex(p => p.ProjectCode)
@@ -35,6 +41,30 @@ namespace TaskManagementApi.Infrastructure.Persistence
                 .HasOne(s => s.DependsOnSubProject)
                 .WithMany()
                 .HasForeignKey(s => s.DependsOnSubProjectId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Ticket Links
+            builder.Entity<TicketLink>()
+                .HasOne(tl => tl.SourceTicket)
+                .WithMany(t => t.OutgoingLinks)
+                .HasForeignKey(tl => tl.SourceTicketId);
+
+            builder.Entity<TicketLink>()
+                .HasOne(tl => tl.TargetTicket)
+                .WithMany(t => t.IncomingLinks)
+                .HasForeignKey(tl => tl.TargetTicketId);
+
+            // Ticket Status History
+            builder.Entity<TicketStatusHistory>()
+                .HasOne(h => h.FromStatus)
+                .WithMany()
+                .HasForeignKey(h => h.FromStatusId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<TicketStatusHistory>()
+                .HasOne(h => h.ToStatus)
+                .WithMany()
+                .HasForeignKey(h => h.ToStatusId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }
