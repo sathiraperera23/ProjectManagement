@@ -1,15 +1,17 @@
 using Microsoft.EntityFrameworkCore;
-using TaskManagementApi.Data;
-using TaskManagementApi.Models;
-using TaskManagementApi.Repositories;
-using TaskManagementApi.Services;
+using TaskManagementApi.Infrastructure.Persistence;
+using TaskManagementApi.Domain.Entities;
+using TaskManagementApi.Application.Interfaces;
+using TaskManagementApi.Application.Services;
+using TaskManagementApi.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    b => b.MigrationsAssembly("TaskManagementApi.Infrastructure")));
 
 builder.Services.AddIdentity<User, Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()

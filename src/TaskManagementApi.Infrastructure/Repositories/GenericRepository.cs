@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using TaskManagementApi.Data;
+using TaskManagementApi.Infrastructure.Persistence;
+using TaskManagementApi.Application.Interfaces;
 
-namespace TaskManagementApi.Repositories
+namespace TaskManagementApi.Infrastructure.Repositories
 {
     public class GenericRepository<T> : IRepository<T> where T : class
     {

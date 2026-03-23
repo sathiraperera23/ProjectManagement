@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace TaskManagementApi.Models
+namespace TaskManagementApi.Domain.Entities
 {
-    public class User : IdentityUser
+    public class User : IdentityUser<int>
     {
         public string? MfaSecret { get; set; }
         public int FailedAttemptsCounter { get; set; }

@@ -1,7 +1,7 @@
-using TaskManagementApi.Models;
-using TaskManagementApi.Repositories;
+using TaskManagementApi.Domain.Entities;
+using TaskManagementApi.Application.Interfaces;
 
-namespace TaskManagementApi.Services
+namespace TaskManagementApi.Application.Services
 {
     public class TicketService : ITicketService
     {

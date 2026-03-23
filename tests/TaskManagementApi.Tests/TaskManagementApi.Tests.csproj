@@ -20,7 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TaskManagementApi\TaskManagementApi.csproj" />
+    <ProjectReference Include="..\..\src\TaskManagementApi.Domain\TaskManagementApi.Domain.csproj" />
+    <ProjectReference Include="..\..\src\TaskManagementApi.Application\TaskManagementApi.Application.csproj" />
+    <ProjectReference Include="..\..\src\TaskManagementApi.Infrastructure\TaskManagementApi.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\TaskManagementApi.Web\TaskManagementApi.csproj" />
   </ItemGroup>
 
 </Project>

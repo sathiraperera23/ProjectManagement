@@ -1,4 +1,4 @@
-namespace TaskManagementApi.Models
+namespace TaskManagementApi.Domain.Entities
 {
     public class Team
     {

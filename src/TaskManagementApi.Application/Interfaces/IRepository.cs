@@ -1,4 +1,4 @@
-namespace TaskManagementApi.Repositories
+namespace TaskManagementApi.Application.Interfaces
 {
     public interface IRepository<T> where T : class
     {

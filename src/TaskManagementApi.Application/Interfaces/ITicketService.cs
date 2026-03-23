@@ -1,6 +1,6 @@
-using TaskManagementApi.Models;
+using TaskManagementApi.Domain.Entities;
 
-namespace TaskManagementApi.Services
+namespace TaskManagementApi.Application.Interfaces
 {
     public interface ITicketService
     {

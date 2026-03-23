@@ -1,7 +1,7 @@
 using Moq;
-using TaskManagementApi.Models;
-using TaskManagementApi.Repositories;
-using TaskManagementApi.Services;
+using TaskManagementApi.Domain.Entities;
+using TaskManagementApi.Application.Interfaces;
+using TaskManagementApi.Application.Services;
 
 namespace TaskManagementApi.Tests
 {
