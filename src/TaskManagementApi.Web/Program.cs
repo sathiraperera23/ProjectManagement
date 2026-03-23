@@ -6,12 +6,15 @@ using TaskManagementApi.Application.Services;
 using TaskManagementApi.Infrastructure.Repositories;
 using TaskManagementApi.Infrastructure.Services;
 using TaskManagementApi.Infrastructure.Auth;
+using TaskManagementApi.Infrastructure;
+using TaskManagementApi.Web.Authorization;
 using Microsoft.AspNetCore.Identity;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,6 +71,15 @@ builder.Services.AddSingleton<IClaimsTransformation, KeycloakJwtRoleConverter>()
 // 4. Register KeycloakAuthService with HttpClient
 builder.Services.AddHttpClient<IKeycloakAuthService, KeycloakAuthService>();
 
+// Services
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddHttpContextAccessor();
+
+// Authorization policies — one per permission
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+
 builder.Services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<ITicketService, TicketService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
@@ -82,6 +94,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Data seeding
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    // await db.Database.MigrateAsync(); // Usually handled in CI or manual, but following prompt
+    await RoleSeeder.SeedAsync(db);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -12,6 +12,10 @@ namespace TaskManagementApi.Infrastructure.Persistence
         }
 
         public DbSet<Permission> Permissions { get; set; } = null!;
+        public DbSet<RolePermission> RolePermissions { get; set; } = null!;
+        public DbSet<UserProjectRole> UserProjectRoles { get; set; } = null!;
+        public DbSet<RoleAuditLog> RoleAuditLogs { get; set; } = null!;
+
         public DbSet<Team> Teams { get; set; } = null!;
         public DbSet<Project> Projects { get; set; } = null!;
         public DbSet<Product> Products { get; set; } = null!;
@@ -66,6 +70,24 @@ namespace TaskManagementApi.Infrastructure.Persistence
                 .WithMany()
                 .HasForeignKey(h => h.ToStatusId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Role & Permission Configurations
+            builder.Entity<RolePermission>()
+                .HasKey(rp => new { rp.RoleId, rp.PermissionId });
+
+            builder.Entity<UserProjectRole>()
+                .HasIndex(upr => new { upr.UserId, upr.ProjectId })
+                .IsUnique();
+
+            builder.Entity<Role>()
+                .HasMany(r => r.RolePermissions)
+                .WithOne(rp => rp.Role)
+                .HasForeignKey(rp => rp.RoleId);
+
+            builder.Entity<Permission>()
+                .HasMany<RolePermission>()
+                .WithOne(rp => rp.Permission)
+                .HasForeignKey(rp => rp.PermissionId);
         }
     }
 }

@@ -16,5 +16,6 @@ namespace TaskManagementApi.Domain.Entities
         public bool IsArchived { get; set; }
 
         public ICollection<Product> Products { get; set; } = new List<Product>();
+        public ICollection<UserProjectRole> UserProjectRoles { get; set; } = new List<UserProjectRole>();
     }
 }
