@@ -74,6 +74,8 @@ builder.Services.AddHttpClient<IKeycloakAuthService, KeycloakAuthService>();
 // Services
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IBacklogService, BacklogService>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddHttpContextAccessor();
 
 // Authorization policies — one per permission
@@ -99,7 +101,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    // await db.Database.MigrateAsync(); // Usually handled in CI or manual, but following prompt
+    // await db.Database.MigrateAsync();
     await RoleSeeder.SeedAsync(db);
 }
 

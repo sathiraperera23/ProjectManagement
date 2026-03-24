@@ -8,10 +8,12 @@ namespace TaskManagementApi.Application.Services
     public class ProjectService : IProjectService
     {
         private readonly IRepository<Project> _projectRepository;
+        private readonly IRepository<TicketStatus> _statusRepository;
 
-        public ProjectService(IRepository<Project> projectRepository)
+        public ProjectService(IRepository<Project> projectRepository, IRepository<TicketStatus> statusRepository)
         {
             _projectRepository = projectRepository;
+            _statusRepository = statusRepository;
         }
 
         public async Task<ProjectResponse> CreateProjectAsync(CreateProjectRequest request)
@@ -43,7 +45,26 @@ namespace TaskManagementApi.Application.Services
 
             await _projectRepository.AddAsync(project);
 
+            // Seed default statuses for the new project using repo
+            await SeedTicketStatusesAsync(project.Id);
+
             return MapToResponse(project);
+        }
+
+        private async Task SeedTicketStatusesAsync(int projectId)
+        {
+            var statuses = new List<TicketStatus>
+            {
+                new() { ProjectId = projectId, Name = "Open", Colour = "#CCCCCC", Order = 1, IsDefault = true, IsTerminal = false },
+                new() { ProjectId = projectId, Name = "Completed", Colour = "#33CC33", Order = 9, IsDefault = false, IsTerminal = true },
+                new() { ProjectId = projectId, Name = "Closed", Colour = "#666666", Order = 10, IsDefault = false, IsTerminal = true },
+                new() { ProjectId = projectId, Name = "Cancelled", Colour = "#FF3300", Order = 11, IsDefault = false, IsTerminal = true }
+            };
+
+            foreach (var status in statuses)
+            {
+                await _statusRepository.AddAsync(status);
+            }
         }
 
         public async Task<IEnumerable<ProjectResponse>> GetAllProjectsAsync()
@@ -96,7 +117,6 @@ namespace TaskManagementApi.Application.Services
 
         public async Task AssignTeamOrUserAsync(int id, int? teamId, int? userId)
         {
-            // Placeholder: Team and User assignment logic (e.g., adding to a join table)
             await Task.CompletedTask;
         }
 
