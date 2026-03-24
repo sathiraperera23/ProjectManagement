@@ -4,3 +4,6 @@
 *.userosscache
 *.sln.docstates
 .vs/
+.history/
+*.log
+.DS_Store

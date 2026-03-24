@@ -3,11 +3,13 @@ using TaskManagementApi.Application.DTOs.Tickets;
 using TaskManagementApi.Application.Interfaces;
 using TaskManagementApi.Domain.Enums;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TaskManagementApi.Web.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class TicketsController : ControllerBase
     {
         private readonly ITicketService _ticketService;
@@ -17,7 +19,7 @@ namespace TaskManagementApi.Web.Controllers
             _ticketService = ticketService;
         }
 
-        private int GetCurrentUserId() => 1; // Placeholder: use User.FindFirstValue(ClaimTypes.NameIdentifier)
+        private int GetCurrentUserId() => int.Parse(User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
 
         [HttpPost]
         public async Task<ActionResult<TicketResponse>> CreateTicket(CreateTicketRequest request)

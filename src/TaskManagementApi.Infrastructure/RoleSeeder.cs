@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using TaskManagementApi.Domain.Entities;
 using TaskManagementApi.Infrastructure.Persistence;
 
@@ -152,6 +153,30 @@ namespace TaskManagementApi.Infrastructure
             };
 
             await context.Roles.AddRangeAsync(roles);
+            await context.SaveChangesAsync();
+        }
+
+        public static async Task SeedTicketStatusesAsync(ApplicationDbContext context, int projectId)
+        {
+            if (await context.TicketStatuses.AnyAsync(s => s.ProjectId == projectId)) return;
+
+            var statuses = new List<TicketStatus>
+            {
+                new() { ProjectId = projectId, Name = "Open", Colour = "#CCCCCC", Order = 1, IsDefault = true, IsTerminal = false },
+                new() { ProjectId = projectId, Name = "NotStarted", Colour = "#AAAAAA", Order = 2, IsDefault = false, IsTerminal = false },
+                new() { ProjectId = projectId, Name = "Implementing", Colour = "#BBBBBB", Order = 3, IsDefault = false, IsTerminal = false },
+                new() { ProjectId = projectId, Name = "WIP", Colour = "#3399FF", Order = 4, IsDefault = false, IsTerminal = false },
+                new() { ProjectId = projectId, Name = "Paused", Colour = "#FFCC00", Order = 5, IsDefault = false, IsTerminal = false },
+                new() { ProjectId = projectId, Name = "InReview", Colour = "#9966FF", Order = 6, IsDefault = false, IsTerminal = false },
+                new() { ProjectId = projectId, Name = "QA", Colour = "#FF9900", Order = 7, IsDefault = false, IsTerminal = false },
+                new() { ProjectId = projectId, Name = "UAT", Colour = "#00CC99", Order = 8, IsDefault = false, IsTerminal = false },
+                new() { ProjectId = projectId, Name = "Completed", Colour = "#33CC33", Order = 9, IsDefault = false, IsTerminal = true },
+                new() { ProjectId = projectId, Name = "Closed", Colour = "#666666", Order = 10, IsDefault = false, IsTerminal = true },
+                new() { ProjectId = projectId, Name = "Cancelled", Colour = "#FF3300", Order = 11, IsDefault = false, IsTerminal = true },
+                new() { ProjectId = projectId, Name = "Reopened", Colour = "#FFCCFF", Order = 12, IsDefault = false, IsTerminal = false }
+            };
+
+            await context.TicketStatuses.AddRangeAsync(statuses);
             await context.SaveChangesAsync();
         }
     }
