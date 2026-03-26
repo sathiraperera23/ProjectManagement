@@ -92,6 +92,8 @@ builder.Services.AddScoped<IUserManagerFacade, UserManagerFacade>();
 builder.Services.AddScoped<ITicketExtraService, TicketExtraService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ICustomerBugService, CustomerBugService>();
+builder.Services.AddScoped<IEmailParserService, EmailParserService>();
 builder.Services.AddScoped<ISmsService, SmsService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 

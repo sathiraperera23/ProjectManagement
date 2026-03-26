@@ -55,6 +55,9 @@ namespace TaskManagementApi.Infrastructure.Persistence
         public DbSet<TimeLog> TimeLogs => Set<TimeLog>();
         public DbSet<DelayRecord> DelayRecords => Set<DelayRecord>();
 
+        public DbSet<CustomerBugSubmission> CustomerBugSubmissions => Set<CustomerBugSubmission>();
+        public DbSet<BugApprovalSla> BugApprovalSlas => Set<BugApprovalSla>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -78,6 +81,8 @@ namespace TaskManagementApi.Infrastructure.Persistence
             builder.Entity<UserRate>().HasQueryFilter(r => !r.IsDeleted);
             builder.Entity<TimeLog>().HasQueryFilter(t => !t.IsDeleted);
             builder.Entity<DelayRecord>().HasQueryFilter(d => !d.IsDeleted);
+            builder.Entity<CustomerBugSubmission>().HasQueryFilter(b => !b.IsDeleted);
+            builder.Entity<BugApprovalSla>().HasQueryFilter(s => !s.IsDeleted);
 
             builder.Entity<Project>().HasIndex(p => p.ProjectCode).IsUnique();
 
