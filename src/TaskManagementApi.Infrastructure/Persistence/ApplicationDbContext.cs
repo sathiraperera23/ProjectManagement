@@ -37,6 +37,14 @@ namespace TaskManagementApi.Infrastructure.Persistence
         public DbSet<SprintMemberCapacity> SprintMemberCapacities => Set<SprintMemberCapacity>();
         public DbSet<SprintScopeChange> SprintScopeChanges => Set<SprintScopeChange>();
 
+        public DbSet<TicketComment> TicketComments => Set<TicketComment>();
+        public DbSet<CommentMention> CommentMentions => Set<CommentMention>();
+        public DbSet<CommentReaction> CommentReactions => Set<CommentReaction>();
+        public DbSet<TicketWatcher> TicketWatchers => Set<TicketWatcher>();
+        public DbSet<TicketAttachment> TicketAttachments => Set<TicketAttachment>();
+        public DbSet<DailyUpdate> DailyUpdates => Set<DailyUpdate>();
+        public DbSet<DailyUpdateTicketLink> DailyUpdateTicketLinks => Set<DailyUpdateTicketLink>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -48,6 +56,10 @@ namespace TaskManagementApi.Infrastructure.Persistence
             builder.Entity<TicketStatus>().HasQueryFilter(e => !e.IsDeleted);
             builder.Entity<BacklogItem>().HasQueryFilter(b => !b.IsDeleted);
             builder.Entity<Sprint>().HasQueryFilter(s => !s.IsDeleted);
+            builder.Entity<TicketComment>().HasQueryFilter(c => !c.IsDeleted);
+            builder.Entity<CommentReaction>().HasQueryFilter(r => !r.IsDeleted);
+            builder.Entity<TicketAttachment>().HasQueryFilter(a => !a.IsDeleted);
+            builder.Entity<DailyUpdate>().HasQueryFilter(u => !u.IsDeleted);
 
             builder.Entity<Project>().HasIndex(p => p.ProjectCode).IsUnique();
 
@@ -81,6 +93,16 @@ namespace TaskManagementApi.Infrastructure.Persistence
             builder.Entity<BacklogItem>().HasOne(b => b.Project).WithMany().HasForeignKey(b => b.ProjectId).OnDelete(DeleteBehavior.Restrict);
             builder.Entity<BacklogItem>().HasOne(b => b.Product).WithMany().HasForeignKey(b => b.ProductId).OnDelete(DeleteBehavior.Restrict);
             builder.Entity<BacklogItemTicketLink>().HasIndex(b => new { b.BacklogItemId, b.TicketId }).IsUnique();
+
+            builder.Entity<CommentMention>().HasKey(m => new { m.CommentId, m.UserId });
+            builder.Entity<TicketWatcher>().HasKey(w => new { w.TicketId, w.UserId });
+            builder.Entity<DailyUpdateTicketLink>().HasKey(l => new { l.DailyUpdateId, l.TicketId });
+
+            builder.Entity<TicketComment>()
+                .HasOne(c => c.ParentComment)
+                .WithMany(c => c.Replies)
+                .HasForeignKey(c => c.ParentCommentId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
