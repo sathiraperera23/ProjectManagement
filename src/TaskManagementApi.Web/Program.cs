@@ -87,6 +87,8 @@ builder.Services.AddScoped<ITicketService, TicketService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ISubProjectService, SubProjectService>();
+builder.Services.AddScoped<ISprintService, SprintService>();
+builder.Services.AddScoped<IUserManagerFacade, UserManagerFacade>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<IProjectService>();
 builder.Services.AddFluentValidationAutoValidation();

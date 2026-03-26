@@ -33,6 +33,10 @@ namespace TaskManagementApi.Infrastructure.Persistence
         public DbSet<BacklogItemTicketLink> BacklogItemTicketLinks => Set<BacklogItemTicketLink>();
         public DbSet<BacklogApprovalRequest> BacklogApprovalRequests => Set<BacklogApprovalRequest>();
 
+        public DbSet<Sprint> Sprints => Set<Sprint>();
+        public DbSet<SprintMemberCapacity> SprintMemberCapacities => Set<SprintMemberCapacity>();
+        public DbSet<SprintScopeChange> SprintScopeChanges => Set<SprintScopeChange>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -43,6 +47,7 @@ namespace TaskManagementApi.Infrastructure.Persistence
             builder.Entity<Ticket>().HasQueryFilter(e => !e.IsDeleted);
             builder.Entity<TicketStatus>().HasQueryFilter(e => !e.IsDeleted);
             builder.Entity<BacklogItem>().HasQueryFilter(b => !b.IsDeleted);
+            builder.Entity<Sprint>().HasQueryFilter(s => !s.IsDeleted);
 
             builder.Entity<Project>().HasIndex(p => p.ProjectCode).IsUnique();
 
