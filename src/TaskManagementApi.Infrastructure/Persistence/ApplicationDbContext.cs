@@ -50,6 +50,11 @@ namespace TaskManagementApi.Infrastructure.Persistence
         public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
         public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
 
+        public DbSet<ProjectBudget> ProjectBudgets => Set<ProjectBudget>();
+        public DbSet<UserRate> UserRates => Set<UserRate>();
+        public DbSet<TimeLog> TimeLogs => Set<TimeLog>();
+        public DbSet<DelayRecord> DelayRecords => Set<DelayRecord>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -69,6 +74,10 @@ namespace TaskManagementApi.Infrastructure.Persistence
             builder.Entity<NotificationPreference>().HasQueryFilter(p => !p.IsDeleted);
             builder.Entity<NotificationLog>().HasQueryFilter(l => !l.IsDeleted);
             builder.Entity<NotificationRule>().HasQueryFilter(r => !r.IsDeleted);
+            builder.Entity<ProjectBudget>().HasQueryFilter(b => !b.IsDeleted);
+            builder.Entity<UserRate>().HasQueryFilter(r => !r.IsDeleted);
+            builder.Entity<TimeLog>().HasQueryFilter(t => !t.IsDeleted);
+            builder.Entity<DelayRecord>().HasQueryFilter(d => !d.IsDeleted);
 
             builder.Entity<Project>().HasIndex(p => p.ProjectCode).IsUnique();
 

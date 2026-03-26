@@ -93,6 +93,9 @@ builder.Services.AddScoped<ITicketExtraService, TicketExtraService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ISmsService, SmsService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+
+builder.Services.AddHostedService<DelayDetectionService>();
 
 builder.Services.AddSignalR();
 
