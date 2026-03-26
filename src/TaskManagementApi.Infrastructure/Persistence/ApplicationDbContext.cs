@@ -45,6 +45,11 @@ namespace TaskManagementApi.Infrastructure.Persistence
         public DbSet<DailyUpdate> DailyUpdates => Set<DailyUpdate>();
         public DbSet<DailyUpdateTicketLink> DailyUpdateTicketLinks => Set<DailyUpdateTicketLink>();
 
+        public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+        public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
+        public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -60,6 +65,10 @@ namespace TaskManagementApi.Infrastructure.Persistence
             builder.Entity<CommentReaction>().HasQueryFilter(r => !r.IsDeleted);
             builder.Entity<TicketAttachment>().HasQueryFilter(a => !a.IsDeleted);
             builder.Entity<DailyUpdate>().HasQueryFilter(u => !u.IsDeleted);
+            builder.Entity<Notification>().HasQueryFilter(n => !n.IsDeleted);
+            builder.Entity<NotificationPreference>().HasQueryFilter(p => !p.IsDeleted);
+            builder.Entity<NotificationLog>().HasQueryFilter(l => !l.IsDeleted);
+            builder.Entity<NotificationRule>().HasQueryFilter(r => !r.IsDeleted);
 
             builder.Entity<Project>().HasIndex(p => p.ProjectCode).IsUnique();
 
