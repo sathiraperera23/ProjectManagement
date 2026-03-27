@@ -96,8 +96,11 @@ builder.Services.AddScoped<ICustomerBugService, CustomerBugService>();
 builder.Services.AddScoped<IEmailParserService, EmailParserService>();
 builder.Services.AddScoped<IBugReportTemplateService, BugReportTemplateService>();
 builder.Services.AddScoped<IUserAdminService, UserAdminService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ISmsService, SmsService>();
+builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddHttpClient<ISmsService, SmsService>();
 
 builder.Services.AddHostedService<EnhancedDelayDetectionService>();
 

@@ -15,7 +15,7 @@ namespace TaskManagementApi.Application.Services
         private readonly IRepository<TeamMember> _memberRepository;
         private readonly UserManager<User> _userManager;
         private readonly IEmailService _emailService;
-        private readonly ISmsService _smsService;
+        private readonly IOtpService _otpService;
 
         public UserAdminService(
             IRepository<UserInvitation> invitationRepository,
@@ -24,7 +24,7 @@ namespace TaskManagementApi.Application.Services
             IRepository<TeamMember> memberRepository,
             UserManager<User> userManager,
             IEmailService emailService,
-            ISmsService smsService)
+            IOtpService otpService)
         {
             _invitationRepository = invitationRepository;
             _userRepository = userRepository;
@@ -122,23 +122,16 @@ namespace TaskManagementApi.Application.Services
 
             user.MobileNumber = mobileNumber;
             user.MobileVerified = false;
-            user.MobileVerificationCode = new Random().Next(100000, 999999).ToString();
             await _userRepository.UpdateAsync(user);
 
-            await _smsService.SendSmsAsync(mobileNumber, $"Your OTP code is {user.MobileVerificationCode}");
+            await _otpService.SendOtpAsync(mobileNumber);
         }
 
         public async Task<bool> VerifyMobileAsync(int userId, string code)
         {
             var user = await _userRepository.GetByIdAsync(userId);
-            if (user != null && user.MobileVerificationCode == code)
-            {
-                user.MobileVerified = true;
-                user.MobileVerificationCode = null;
-                await _userRepository.UpdateAsync(user);
-                return true;
-            }
-            return false;
+            if (user == null) return false;
+            return await _otpService.VerifyOtpAsync(user.MobileNumber!, code, userId);
         }
 
         // Other methods implementation...

@@ -123,7 +123,20 @@ namespace TaskManagementApi.Application.Services
 
             if (pref.Email && !string.IsNullOrEmpty(user.Email))
             {
-                await _emailService.SendEmailAsync(user.Email, e.Title, e.Body);
+                var appUrl = _configuration["App:Url"] ?? "http://localhost:3000";
+                var email = new EmailMessage
+                {
+                    To = user.Email,
+                    Subject = $"[{e.ReferenceType ?? "Task"}] {e.Title}",
+                    HtmlBody = $@"
+                        <p>{e.Body}</p>
+                        <p><strong>Reference:</strong> {e.ReferenceId}</p>
+                        <p><a href='{appUrl}/{e.ReferenceType?.ToLower()}s/{e.ReferenceId}'>View Detail</a></p>
+                        <br/>
+                        <small>You are receiving this because you are subscribed to {e.Type} notifications.</small>",
+                    FromDisplayName = "Task Management System"
+                };
+                await _emailService.SendEmailAsync(email);
                 await LogAsync(user.Id, "Email", e);
             }
 

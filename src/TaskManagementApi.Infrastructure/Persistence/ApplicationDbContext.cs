@@ -61,6 +61,7 @@ namespace TaskManagementApi.Infrastructure.Persistence
 
         public DbSet<UserInvitation> UserInvitations => Set<UserInvitation>();
         public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+        public DbSet<MobileOtp> MobileOtps => Set<MobileOtp>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

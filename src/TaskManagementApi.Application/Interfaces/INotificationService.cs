@@ -33,13 +33,26 @@ namespace TaskManagementApi.Application.Interfaces
         public DateTime? RevisedDueDate { get; set; } // For escalation suppression check
     }
 
+    public class EmailMessage
+    {
+        public string To { get; set; } = null!;
+        public string? Cc { get; set; }
+        public string? Bcc { get; set; }
+        public string Subject { get; set; } = null!;
+        public string HtmlBody { get; set; } = null!;
+        public string? PlainTextBody { get; set; }
+        public string? FromAddress { get; set; }
+        public string? FromDisplayName { get; set; }
+    }
+
     public interface IEmailService
     {
-        Task SendEmailAsync(string to, string subject, string body);
+        Task SendEmailAsync(string to, string subject, string htmlBody, string? plainTextBody = null);
+        Task SendEmailAsync(EmailMessage message);
     }
 
     public interface ISmsService
     {
-        Task SendSmsAsync(string to, string message);
+        Task<bool> SendSmsAsync(string mobileNumber, string message);
     }
 }
