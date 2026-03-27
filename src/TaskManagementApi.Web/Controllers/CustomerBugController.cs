@@ -14,11 +14,13 @@ namespace TaskManagementApi.Web.Controllers
     public class CustomerBugController : ControllerBase
     {
         private readonly ICustomerBugService _bugService;
+        private readonly IBugReportTemplateService _templateService;
         private readonly IUserManagerFacade _userManager;
 
-        public CustomerBugController(ICustomerBugService bugService, IUserManagerFacade userManager)
+        public CustomerBugController(ICustomerBugService bugService, IBugReportTemplateService templateService, IUserManagerFacade userManager)
         {
             _bugService = bugService;
+            _templateService = templateService;
             _userManager = userManager;
         }
 
@@ -89,6 +91,29 @@ namespace TaskManagementApi.Web.Controllers
         public async Task<IActionResult> UpdateSla(int projectId, [FromBody] UpdateBugSlaRequest request)
         {
             await _bugService.UpdateSlaAsync(projectId, request);
+            return NoContent();
+        }
+
+        [HttpGet("projects/{projectId}/bug-report-template")]
+        public async Task<IActionResult> GetTemplate(int projectId)
+        {
+            var template = await _templateService.GetTemplateAsync(projectId);
+            var bytes = System.Text.Encoding.UTF8.GetBytes(template);
+            return File(bytes, "text/plain", "BugReportTemplate.txt");
+        }
+
+        [HttpGet("projects/{projectId}/bug-report-template/preview")]
+        public async Task<IActionResult> GetTemplatePreview(int projectId)
+        {
+            var template = await _templateService.GetTemplateAsync(projectId);
+            return Ok(new { template });
+        }
+
+        [HttpPut("projects/{projectId}/bug-report-template")]
+        [RequirePermission(Permissions.ManageAccessRules)]
+        public async Task<IActionResult> UpdateTemplateCustomText(int projectId, [FromBody] string customText)
+        {
+            await _templateService.UpdateCustomTextAsync(projectId, customText, await GetCurrentUserId());
             return NoContent();
         }
     }

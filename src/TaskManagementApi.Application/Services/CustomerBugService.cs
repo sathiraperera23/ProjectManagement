@@ -19,6 +19,7 @@ namespace TaskManagementApi.Application.Services
         private readonly ITicketService _ticketService;
         private readonly INotificationService _notificationService;
         private readonly IEmailService _emailService;
+        private readonly IBugReportTemplateService _templateService;
         private readonly IConfiguration _configuration;
         private readonly ILogger<CustomerBugService> _logger;
 
@@ -31,6 +32,7 @@ namespace TaskManagementApi.Application.Services
             ITicketService ticketService,
             INotificationService notificationService,
             IEmailService emailService,
+            IBugReportTemplateService templateService,
             IConfiguration configuration,
             ILogger<CustomerBugService> logger)
         {
@@ -77,7 +79,8 @@ namespace TaskManagementApi.Application.Services
                 await _submissionRepository.AddAsync(submission);
 
                 // Automated reply with instructions
-                await _emailService.SendEmailAsync(request.From, "Bug Submission Instruction", "Your submission was invalid. Please use the required template.");
+                var template = await _templateService.GetTemplateAsync(project.Id);
+                await _emailService.SendEmailAsync(request.From, "Bug Submission Instruction", $"Your submission was invalid. Please use the required template below:\n\n{template}");
                 return;
             }
 
