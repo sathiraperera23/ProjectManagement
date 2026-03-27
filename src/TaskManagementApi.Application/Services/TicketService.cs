@@ -225,6 +225,18 @@ namespace TaskManagementApi.Application.Services
             var ticket = await _ticketRepository.Query().Include(t => t.Assignees).FirstOrDefaultAsync(t => t.Id == id);
             if (ticket == null) return;
 
+            // Prevent assigning to deactivated users
+            var deactivatedUsers = await _projectRepository.Query()
+                .SelectMany(p => p.UserProjectRoles)
+                .Where(u => assigneeIds.Contains(u.UserId) && !u.User.IsActive)
+                .Select(u => u.User.DisplayName)
+                .ToListAsync();
+
+            if (deactivatedUsers.Any())
+            {
+                throw new Exception($"Cannot assign to deactivated users: {string.Join(", ", deactivatedUsers)}");
+            }
+
             ticket.Assignees.Clear();
             foreach (var aId in assigneeIds)
             {

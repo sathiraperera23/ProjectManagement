@@ -67,5 +67,16 @@ namespace TaskManagementApi.Domain.Entities
         public int DaysDelayed { get; set; }
         public string? Reason { get; set; }
         public DateTime? RevisedDueDate { get; set; }
+        public int EscalationLevel { get; set; } // 0=none, 1=PM notified, 2=Director notified
+    }
+
+    public class EscalationRule : BaseEntity
+    {
+        public int ProjectId { get; set; }
+        public Project Project { get; set; } = null!;
+
+        public int EscalateAfterDays { get; set; } = 3;
+        public int RepeatEveryDays { get; set; }
+        public int SecondLevelAfterDays { get; set; }
     }
 }
