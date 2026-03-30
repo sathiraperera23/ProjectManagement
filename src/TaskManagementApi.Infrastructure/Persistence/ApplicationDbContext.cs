@@ -63,6 +63,11 @@ namespace TaskManagementApi.Infrastructure.Persistence
         public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
         public DbSet<MobileOtp> MobileOtps => Set<MobileOtp>();
 
+        public DbSet<AccessRule> AccessRules => Set<AccessRule>();
+        public DbSet<AccessRequest> AccessRequests => Set<AccessRequest>();
+        public DbSet<ProjectWipLimit> ProjectWipLimits => Set<ProjectWipLimit>();
+        public DbSet<Milestone> Milestones => Set<Milestone>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -90,6 +95,9 @@ namespace TaskManagementApi.Infrastructure.Persistence
             builder.Entity<BugApprovalSla>().HasQueryFilter(s => !s.IsDeleted);
             builder.Entity<UserInvitation>().HasQueryFilter(i => !i.IsDeleted);
             builder.Entity<Team>().HasQueryFilter(t => !t.IsDeleted);
+            builder.Entity<AccessRule>().HasQueryFilter(r => !r.IsDeleted);
+            builder.Entity<AccessRequest>().HasQueryFilter(r => !r.IsDeleted);
+            builder.Entity<Milestone>().HasQueryFilter(m => !m.IsDeleted);
 
             builder.Entity<Project>().HasIndex(p => p.ProjectCode).IsUnique();
 

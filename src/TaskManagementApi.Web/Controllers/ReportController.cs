@@ -14,11 +14,13 @@ namespace TaskManagementApi.Web.Controllers
     public class ReportController : ControllerBase
     {
         private readonly IReportService _reportService;
+        private readonly IAccessControlService _accessService;
         private readonly IUserManagerFacade _userManager;
 
-        public ReportController(IReportService reportService, IUserManagerFacade userManager)
+        public ReportController(IReportService reportService, IAccessControlService accessService, IUserManagerFacade userManager)
         {
             _reportService = reportService;
+            _accessService = accessService;
             _userManager = userManager;
         }
 
@@ -77,6 +79,10 @@ namespace TaskManagementApi.Web.Controllers
         [HttpGet("projects/{projectId}/reports/rtm")]
         public async Task<IActionResult> GetRtm(int projectId, [FromQuery] int? subProjectId, [FromQuery] int? productId)
         {
+            // RBAC Check
+            var access = await _accessService.GetAccessLevelAsync(await GetCurrentUserId(), Domain.Entities.AccessComponentType.Report, projectId);
+            if (access == Domain.Entities.AccessLevel.NoAccess) return Forbid();
+
             var report = await _reportService.GetRtmReportAsync(projectId, subProjectId, productId);
             return Ok(report);
         }
