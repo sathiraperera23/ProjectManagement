@@ -9,5 +9,6 @@ namespace TaskManagementApi.Domain.Entities
         public int TargetTicketId { get; set; }
         public Ticket TargetTicket { get; set; } = null!;
         public TicketLinkType LinkType { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

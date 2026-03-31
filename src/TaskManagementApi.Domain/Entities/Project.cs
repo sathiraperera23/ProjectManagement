@@ -14,6 +14,8 @@ namespace TaskManagementApi.Domain.Entities
         public string? AvatarUrl { get; set; }
         public string? Colour { get; set; }
         public bool IsArchived { get; set; }
+        public string? IntakeEmailAddress { get; set; }
+        public string? BugReportTemplateCustomText { get; set; }
 
         public ICollection<Product> Products { get; set; } = new List<Product>();
         public ICollection<UserProjectRole> UserProjectRoles { get; set; } = new List<UserProjectRole>();

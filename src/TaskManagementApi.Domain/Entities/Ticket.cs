@@ -33,6 +33,7 @@ namespace TaskManagementApi.Domain.Entities
         public int? StoryPoints { get; set; }
         public int? SprintId { get; set; }
         public int? MilestoneId { get; set; }
+        public Milestone? Milestone { get; set; }
 
         public string? BrdNumber { get; set; }
         public string? UseCaseNumber { get; set; }

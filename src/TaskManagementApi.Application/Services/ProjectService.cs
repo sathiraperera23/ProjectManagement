@@ -9,11 +9,13 @@ namespace TaskManagementApi.Application.Services
     {
         private readonly IRepository<Project> _projectRepository;
         private readonly IRepository<TicketStatus> _statusRepository;
+        private readonly IUserAdminService _userAdminService;
 
-        public ProjectService(IRepository<Project> projectRepository, IRepository<TicketStatus> statusRepository)
+        public ProjectService(IRepository<Project> projectRepository, IRepository<TicketStatus> statusRepository, IUserAdminService userAdminService)
         {
             _projectRepository = projectRepository;
             _statusRepository = statusRepository;
+            _userAdminService = userAdminService;
         }
 
         public async Task<ProjectResponse> CreateProjectAsync(CreateProjectRequest request)
@@ -47,6 +49,9 @@ namespace TaskManagementApi.Application.Services
 
             // Seed default statuses for the new project using repo
             await SeedTicketStatusesAsync(project.Id);
+
+            // Seed default teams
+            await _userAdminService.SeedDefaultTeamsAsync(project.Id);
 
             return MapToResponse(project);
         }

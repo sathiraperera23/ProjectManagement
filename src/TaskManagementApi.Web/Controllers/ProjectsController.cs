@@ -9,10 +9,22 @@ namespace TaskManagementApi.Web.Controllers
     public class ProjectsController : ControllerBase
     {
         private readonly IProjectService _projectService;
+        private readonly IAccessControlService _accessService;
+        private readonly IUserManagerFacade _userManager;
 
-        public ProjectsController(IProjectService projectService)
+        public ProjectsController(IProjectService projectService, IAccessControlService accessService, IUserManagerFacade userManager)
         {
             _projectService = projectService;
+            _accessService = accessService;
+            _userManager = userManager;
+        }
+
+        private async Task<int> GetCurrentUserId()
+        {
+            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (providerId == null) return 0;
+            var user = await _userManager.FindByProviderIdAsync(providerId);
+            return user?.Id ?? 0;
         }
 
         [HttpPost]
@@ -33,7 +45,11 @@ namespace TaskManagementApi.Web.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ProjectResponse>> GetProject(int id)
         {
-            var project = await _projectService.GetProjectByIdAsync(id);
+            // RBAC Check
+            var access = await _accessService.GetAccessLevelAsync(await GetCurrentUserId(), Domain.Entities.AccessComponentType.Project, id);
+            if (access == Domain.Entities.AccessLevel.NoAccess) return Forbid();
+
+            var project = _projectService.GetProjectByIdAsync(id);
             if (project == null) return NotFound();
             return Ok(project);
         }

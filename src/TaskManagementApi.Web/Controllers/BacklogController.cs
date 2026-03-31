@@ -16,13 +16,23 @@ namespace TaskManagementApi.Web.Controllers
     public class BacklogController : ControllerBase
     {
         private readonly IBacklogService _backlogService;
+        private readonly IAccessControlService _accessService;
+        private readonly IUserManagerFacade _userManager;
 
-        public BacklogController(IBacklogService backlogService)
+        public BacklogController(IBacklogService backlogService, IAccessControlService accessService, IUserManagerFacade userManager)
         {
             _backlogService = backlogService;
+            _accessService = accessService;
+            _userManager = userManager;
         }
 
-        private int GetCurrentUserId() => int.Parse(User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        private async Task<int> GetCurrentUserId()
+        {
+            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (providerId == null) return 0;
+            var user = await _userManager.FindByProviderIdAsync(providerId);
+            return user?.Id ?? 0;
+        }
 
         // ── Project-level backlog ──────────────────────────────
 
@@ -49,6 +59,10 @@ namespace TaskManagementApi.Web.Controllers
         [HttpGet("backlog/{id}")]
         public async Task<IActionResult> GetById(int id)
         {
+            // RBAC Check
+            var access = await _accessService.GetAccessLevelAsync(await GetCurrentUserId(), Domain.Entities.AccessComponentType.Backlog, id);
+            if (access == Domain.Entities.AccessLevel.NoAccess) return Forbid();
+
             var item = await _backlogService.GetByIdAsync(id);
             if (item == null) return NotFound();
             return Ok(item);

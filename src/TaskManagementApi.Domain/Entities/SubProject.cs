@@ -15,6 +15,9 @@ namespace TaskManagementApi.Domain.Entities
         public int? DependsOnSubProjectId { get; set; }
         public SubProject? DependsOnSubProject { get; set; }
 
+        public int? AssignedTeamId { get; set; }
+        public Team? AssignedTeam { get; set; }
+
         public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     }
 }

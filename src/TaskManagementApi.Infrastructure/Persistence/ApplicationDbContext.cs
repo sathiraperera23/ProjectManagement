@@ -45,6 +45,29 @@ namespace TaskManagementApi.Infrastructure.Persistence
         public DbSet<DailyUpdate> DailyUpdates => Set<DailyUpdate>();
         public DbSet<DailyUpdateTicketLink> DailyUpdateTicketLinks => Set<DailyUpdateTicketLink>();
 
+        public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+        public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
+        public DbSet<NotificationRule> NotificationRules => Set<NotificationRule>();
+
+        public DbSet<ProjectBudget> ProjectBudgets => Set<ProjectBudget>();
+        public DbSet<UserRate> UserRates => Set<UserRate>();
+        public DbSet<TimeLog> TimeLogs => Set<TimeLog>();
+        public DbSet<DelayRecord> DelayRecords => Set<DelayRecord>();
+        public DbSet<EscalationRule> EscalationRules => Set<EscalationRule>();
+
+        public DbSet<CustomerBugSubmission> CustomerBugSubmissions => Set<CustomerBugSubmission>();
+        public DbSet<BugApprovalSla> BugApprovalSlas => Set<BugApprovalSla>();
+
+        public DbSet<UserInvitation> UserInvitations => Set<UserInvitation>();
+        public DbSet<TeamMember> TeamMembers => Set<TeamMember>();
+        public DbSet<MobileOtp> MobileOtps => Set<MobileOtp>();
+
+        public DbSet<AccessRule> AccessRules => Set<AccessRule>();
+        public DbSet<AccessRequest> AccessRequests => Set<AccessRequest>();
+        public DbSet<ProjectWipLimit> ProjectWipLimits => Set<ProjectWipLimit>();
+        public DbSet<Milestone> Milestones => Set<Milestone>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -60,6 +83,21 @@ namespace TaskManagementApi.Infrastructure.Persistence
             builder.Entity<CommentReaction>().HasQueryFilter(r => !r.IsDeleted);
             builder.Entity<TicketAttachment>().HasQueryFilter(a => !a.IsDeleted);
             builder.Entity<DailyUpdate>().HasQueryFilter(u => !u.IsDeleted);
+            builder.Entity<Notification>().HasQueryFilter(n => !n.IsDeleted);
+            builder.Entity<NotificationPreference>().HasQueryFilter(p => !p.IsDeleted);
+            builder.Entity<NotificationLog>().HasQueryFilter(l => !l.IsDeleted);
+            builder.Entity<NotificationRule>().HasQueryFilter(r => !r.IsDeleted);
+            builder.Entity<ProjectBudget>().HasQueryFilter(b => !b.IsDeleted);
+            builder.Entity<UserRate>().HasQueryFilter(r => !r.IsDeleted);
+            builder.Entity<TimeLog>().HasQueryFilter(t => !t.IsDeleted);
+            builder.Entity<DelayRecord>().HasQueryFilter(d => !d.IsDeleted);
+            builder.Entity<CustomerBugSubmission>().HasQueryFilter(b => !b.IsDeleted);
+            builder.Entity<BugApprovalSla>().HasQueryFilter(s => !s.IsDeleted);
+            builder.Entity<UserInvitation>().HasQueryFilter(i => !i.IsDeleted);
+            builder.Entity<Team>().HasQueryFilter(t => !t.IsDeleted);
+            builder.Entity<AccessRule>().HasQueryFilter(r => !r.IsDeleted);
+            builder.Entity<AccessRequest>().HasQueryFilter(r => !r.IsDeleted);
+            builder.Entity<Milestone>().HasQueryFilter(m => !m.IsDeleted);
 
             builder.Entity<Project>().HasIndex(p => p.ProjectCode).IsUnique();
 
@@ -97,6 +135,7 @@ namespace TaskManagementApi.Infrastructure.Persistence
             builder.Entity<CommentMention>().HasKey(m => new { m.CommentId, m.UserId });
             builder.Entity<TicketWatcher>().HasKey(w => new { w.TicketId, w.UserId });
             builder.Entity<DailyUpdateTicketLink>().HasKey(l => new { l.DailyUpdateId, l.TicketId });
+            builder.Entity<TeamMember>().HasKey(m => new { m.TeamId, m.UserId });
 
             builder.Entity<TicketComment>()
                 .HasOne(c => c.ParentComment)

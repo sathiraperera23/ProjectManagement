@@ -90,6 +90,23 @@ builder.Services.AddScoped<ISubProjectService, SubProjectService>();
 builder.Services.AddScoped<ISprintService, SprintService>();
 builder.Services.AddScoped<IUserManagerFacade, UserManagerFacade>();
 builder.Services.AddScoped<ITicketExtraService, TicketExtraService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ICustomerBugService, CustomerBugService>();
+builder.Services.AddScoped<IEmailParserService, EmailParserService>();
+builder.Services.AddScoped<IBugReportTemplateService, BugReportTemplateService>();
+builder.Services.AddScoped<IUserAdminService, UserAdminService>();
+builder.Services.AddScoped<IProjectSummaryService, ProjectSummaryService>();
+builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ISmsService, SmsService>();
+builder.Services.AddScoped<IOtpService, OtpService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddHttpClient<ISmsService, SmsService>();
+
+builder.Services.AddHostedService<EnhancedDelayDetectionService>();
+
+builder.Services.AddSignalR();
 
 builder.Services.AddValidatorsFromAssemblyContaining<IProjectService>();
 builder.Services.AddFluentValidationAutoValidation();
@@ -123,5 +140,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();
