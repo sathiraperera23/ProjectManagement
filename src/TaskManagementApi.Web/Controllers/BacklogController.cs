@@ -77,7 +77,7 @@ namespace TaskManagementApi.Web.Controllers
             if (!result.IsValid)
                 return BadRequest(result.Errors.Select(e => e.ErrorMessage));
 
-            var item = await _backlogService.CreateAsync(request, GetCurrentUserId());
+            var item = await _backlogService.CreateAsync(request, await GetCurrentUserId());
             return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
         }
 
@@ -90,7 +90,7 @@ namespace TaskManagementApi.Web.Controllers
             if (!result.IsValid)
                 return BadRequest(result.Errors.Select(e => e.ErrorMessage));
 
-            var item = await _backlogService.UpdateAsync(id, request, GetCurrentUserId());
+            var item = await _backlogService.UpdateAsync(id, request, await GetCurrentUserId());
             return Ok(item);
         }
 
@@ -98,7 +98,7 @@ namespace TaskManagementApi.Web.Controllers
         [RequirePermission(Permissions.ManageBrds)]
         public async Task<IActionResult> Delete(int id)
         {
-            await _backlogService.DeleteAsync(id, GetCurrentUserId());
+            await _backlogService.DeleteAsync(id, await GetCurrentUserId());
             return NoContent();
         }
 
@@ -138,7 +138,7 @@ namespace TaskManagementApi.Web.Controllers
             if (file == null || file.Length == 0)
                 return BadRequest("No file provided");
 
-            var attachment = await _backlogService.AddAttachmentAsync(id, file, GetCurrentUserId());
+            var attachment = await _backlogService.AddAttachmentAsync(id, file, await GetCurrentUserId());
             return Ok(attachment);
         }
 
@@ -175,7 +175,7 @@ namespace TaskManagementApi.Web.Controllers
         [RequirePermission(Permissions.ManageBrds)]
         public async Task<IActionResult> LinkToTicket(int id, int ticketId)
         {
-            await _backlogService.LinkToTicketAsync(id, ticketId, GetCurrentUserId());
+            await _backlogService.LinkToTicketAsync(id, ticketId, await GetCurrentUserId());
             return NoContent();
         }
 
@@ -200,7 +200,7 @@ namespace TaskManagementApi.Web.Controllers
         [RequirePermission(Permissions.ManageBrds)]
         public async Task<IActionResult> SubmitForApproval(int id)
         {
-            var approval = await _backlogService.SubmitForApprovalAsync(id, GetCurrentUserId());
+            var approval = await _backlogService.SubmitForApprovalAsync(id, await GetCurrentUserId());
             return Ok(approval);
         }
 
@@ -208,7 +208,7 @@ namespace TaskManagementApi.Web.Controllers
         [RequirePermission(Permissions.ApproveRequirements)]
         public async Task<IActionResult> Approve(int id, int approvalRequestId, [FromBody] ApprovalActionRequest request)
         {
-            var approval = await _backlogService.ApproveAsync(id, approvalRequestId, request.Note, GetCurrentUserId());
+            var approval = await _backlogService.ApproveAsync(id, approvalRequestId, request.Note, await GetCurrentUserId());
             return Ok(approval);
         }
 
@@ -219,7 +219,7 @@ namespace TaskManagementApi.Web.Controllers
             if (string.IsNullOrEmpty(request.Note))
                 return BadRequest("A rejection reason is required");
 
-            var approval = await _backlogService.RejectAsync(id, approvalRequestId, request.Note, GetCurrentUserId());
+            var approval = await _backlogService.RejectAsync(id, approvalRequestId, request.Note, await GetCurrentUserId());
             return Ok(approval);
         }
 
@@ -230,7 +230,7 @@ namespace TaskManagementApi.Web.Controllers
             if (string.IsNullOrEmpty(request.Note))
                 return BadRequest("A note is required when requesting changes");
 
-            var approval = await _backlogService.RequestChangesAsync(id, approvalRequestId, request.Note, GetCurrentUserId());
+            var approval = await _backlogService.RequestChangesAsync(id, approvalRequestId, request.Note, await GetCurrentUserId());
             return Ok(approval);
         }
     }

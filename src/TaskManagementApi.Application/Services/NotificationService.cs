@@ -6,7 +6,6 @@ using TaskManagementApi.Application.DTOs.Notifications;
 using TaskManagementApi.Application.Interfaces;
 using TaskManagementApi.Domain.Entities;
 using TaskManagementApi.Domain.Enums;
-using TaskManagementApi.Web.Hubs;
 
 namespace TaskManagementApi.Application.Services
 {
@@ -19,7 +18,7 @@ namespace TaskManagementApi.Application.Services
         private readonly IRepository<User> _userRepository;
         private readonly IEmailService _emailService;
         private readonly ISmsService _smsService;
-        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly INotificationHubService _hubService;
         private readonly IConfiguration _configuration;
         private readonly ILogger<NotificationService> _logger;
 
@@ -31,7 +30,7 @@ namespace TaskManagementApi.Application.Services
             IRepository<User> userRepository,
             IEmailService emailService,
             ISmsService smsService,
-            IHubContext<NotificationHub> hubContext,
+            INotificationHubService hubService,
             IConfiguration configuration,
             ILogger<NotificationService> logger)
         {
@@ -42,7 +41,7 @@ namespace TaskManagementApi.Application.Services
             _userRepository = userRepository;
             _emailService = emailService;
             _smsService = smsService;
-            _hubContext = hubContext;
+            _hubService = hubService;
             _configuration = configuration;
             _logger = logger;
         }
@@ -118,7 +117,7 @@ namespace TaskManagementApi.Application.Services
                     CreatedAt = DateTime.UtcNow
                 };
                 await _notificationRepository.AddAsync(n);
-                await _hubContext.Clients.Group($"User_{user.ProviderId}").SendAsync("ReceiveNotification", MapToDto(n));
+                await _hubService.SendNotificationAsync(user.ProviderId!, MapToDto(n));
             }
 
             if (pref.Email && !string.IsNullOrEmpty(user.Email))

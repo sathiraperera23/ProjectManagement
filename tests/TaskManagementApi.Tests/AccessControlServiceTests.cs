@@ -47,7 +47,7 @@ namespace TaskManagementApi.Tests
                 new AccessRule { ComponentType = type, ComponentId = compId, AccessLevel = AccessLevel.ViewOnly, ConditionType = AccessConditionType.ProjectAssignment, ConditionValue = userId.ToString() }
             };
 
-            _ruleRepo.Setup(r => r.Query()).Returns(rules.AsQueryable());
+            _ruleRepo.SetupAsyncQueryable(rules.AsQueryable());
 
             // Act
             var result = await _service.GetAccessLevelAsync(userId, type, compId);
@@ -68,7 +68,7 @@ namespace TaskManagementApi.Tests
             };
 
             _userRepo.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(new User { Id = userId });
-            _ruleRepo.Setup(r => r.Query()).Returns(rules.AsQueryable());
+            _ruleRepo.SetupAsyncQueryable(rules.AsQueryable());
 
             // Act
             var result = await _service.GetAccessLevelAsync(userId, AccessComponentType.Project, 10);

@@ -73,17 +73,19 @@ namespace TaskManagementApi.Application.Services
             var maxOrder = 0;
             if (request.ProjectId.HasValue)
             {
-                maxOrder = await _backlogRepository.Query()
+                var orders = await _backlogRepository.Query()
                     .Where(b => b.ProjectId == request.ProjectId)
                     .Select(b => (int?)b.Order)
-                    .MaxAsync() ?? 0;
+                    .ToListAsync();
+                maxOrder = orders.Any() ? orders.Max() ?? 0 : 0;
             }
             else if (request.ProductId.HasValue)
             {
-                maxOrder = await _backlogRepository.Query()
+                var orders = await _backlogRepository.Query()
                     .Where(b => b.ProductId == request.ProductId)
                     .Select(b => (int?)b.Order)
-                    .MaxAsync() ?? 0;
+                    .ToListAsync();
+                maxOrder = orders.Any() ? orders.Max() ?? 0 : 0;
             }
 
             var item = new BacklogItem
@@ -97,8 +99,7 @@ namespace TaskManagementApi.Application.Services
                 ProductId = request.ProductId,
                 OwnerId = createdByUserId,
                 Order = maxOrder + 1,
-                AcceptanceCriteria = request.AcceptanceCriteria,
-                CreatedAt = DateTime.UtcNow
+                AcceptanceCriteria = request.AcceptanceCriteria
             };
 
             await _backlogRepository.AddAsync(item);
@@ -120,24 +121,27 @@ namespace TaskManagementApi.Application.Services
 
         public async Task<BacklogItemDto> UpdateAsync(int id, UpdateBacklogItemRequest request, int updatedByUserId)
         {
-            var item = await _backlogRepository.GetByIdAsync(id);
+            var item = await GetByIdAsync(id);
             if (item == null) throw new KeyNotFoundException($"Backlog item {id} not found");
 
-            var latestVersion = await _versionRepository.Query()
+            var versions = await _versionRepository.Query()
                 .Where(v => v.BacklogItemId == id)
                 .Select(v => (int?)v.VersionNumber)
-                .MaxAsync() ?? 0;
+                .ToListAsync();
+            var latestVersion = versions.Any() ? versions.Max() ?? 0 : 0;
 
-            item.Title = request.Title;
-            item.Description = request.Description;
-            item.Priority = request.Priority;
-            item.AcceptanceCriteria = request.AcceptanceCriteria;
-            item.UpdatedAt = DateTime.UtcNow;
+            var entity = await _backlogRepository.GetByIdAsync(id);
+            if (entity == null) throw new KeyNotFoundException();
 
-            if (item.Status == BacklogItemStatus.Approved)
-                item.Status = BacklogItemStatus.Draft;
+            entity.Title = request.Title;
+            entity.Description = request.Description;
+            entity.Priority = request.Priority;
+            entity.AcceptanceCriteria = request.AcceptanceCriteria;
 
-            await _backlogRepository.UpdateAsync(item);
+            if (entity.Status == BacklogItemStatus.Approved)
+                entity.Status = BacklogItemStatus.Draft;
+
+            await _backlogRepository.UpdateAsync(entity);
 
             await _versionRepository.AddAsync(new BacklogItemVersion
             {

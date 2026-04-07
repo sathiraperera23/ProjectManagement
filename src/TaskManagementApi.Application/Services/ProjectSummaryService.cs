@@ -139,7 +139,7 @@ namespace TaskManagementApi.Application.Services
                 .Where(t => t.ProjectId == projectId)
                 .OrderByDescending(t => t.UpdatedAt)
                 .Take(10)
-                .Select(t => new RecentTicketDto { Id = t.Id, TicketNumber = t.TicketNumber, Title = t.Title, Status = t.Status.Name, UpdatedAt = t.UpdatedAt })
+                .Select(t => new RecentTicketDto { Id = t.Id, TicketNumber = t.TicketNumber, Title = t.Title, Status = t.Status.Name, UpdatedAt = t.UpdatedAt ?? t.CreatedAt })
                 .ToListAsync();
 
             // Delays

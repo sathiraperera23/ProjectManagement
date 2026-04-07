@@ -22,6 +22,7 @@ namespace TaskManagementApi.Tests
         private readonly Mock<ITicketService> _ticketServiceMock;
         private readonly Mock<INotificationService> _notifMock;
         private readonly Mock<IEmailService> _emailMock;
+        private readonly Mock<IBugReportTemplateService> _templateMock;
         private readonly CustomerBugService _service;
 
         public CustomerBugServiceTests()
@@ -34,11 +35,13 @@ namespace TaskManagementApi.Tests
             _ticketServiceMock = new Mock<ITicketService>();
             _notifMock = new Mock<INotificationService>();
             _emailMock = new Mock<IEmailService>();
+            _templateMock = new Mock<IBugReportTemplateService>();
 
             _service = new CustomerBugService(
                 _submissionRepo.Object, _ticketRepo.Object, _projectRepo.Object,
                 _slaRepo.Object, _parserMock.Object, _ticketServiceMock.Object,
-                _notifMock.Object, _emailMock.Object, new Mock<IConfiguration>().Object,
+                _notifMock.Object, _emailMock.Object, _templateMock.Object,
+                new Mock<IConfiguration>().Object,
                 new Mock<ILogger<CustomerBugService>>().Object);
         }
 
@@ -51,12 +54,12 @@ namespace TaskManagementApi.Tests
             var request = new BugInboundEmailRequest { To = intakeEmail, From = "cust@example.com", Html = "..." };
 
             var project = new Project { Id = projectId, IntakeEmailAddress = intakeEmail };
-            _projectRepo.Setup(r => r.Query()).Returns(new List<Project> { project }.AsQueryable());
+            _projectRepo.SetupAsyncQueryable(new List<Project> { project }.AsQueryable());
 
             var submission = new CustomerBugSubmission { ParsedTitle = "Existing Bug" };
             _parserMock.Setup(p => p.Parse(It.IsAny<string>())).Returns(submission);
 
-            _ticketRepo.Setup(r => r.Query()).Returns(new List<Ticket> { new Ticket { ProjectId = projectId, Title = "Existing Bug" } }.AsQueryable());
+            _ticketRepo.SetupAsyncQueryable(new List<Ticket> { new Ticket { ProjectId = projectId, Title = "Existing Bug" } }.AsQueryable());
 
             // Act
             await _service.HandleInboundEmailAsync(request);
@@ -72,7 +75,8 @@ namespace TaskManagementApi.Tests
         {
             // Arrange
             var project = new Project { Id = 1, IntakeEmailAddress = "bugs@p.com" };
-            _projectRepo.Setup(r => r.Query()).Returns(new List<Project> { project }.AsQueryable());
+            _projectRepo.SetupAsyncQueryable(new List<Project> { project }.AsQueryable());
+            _ticketRepo.SetupAsyncQueryable(new List<Ticket>().AsQueryable());
 
             var submission = new CustomerBugSubmission { ParsedTitle = "" }; // Title missing
             _parserMock.Setup(p => p.Parse(It.IsAny<string>())).Returns(submission);
@@ -82,7 +86,7 @@ namespace TaskManagementApi.Tests
 
             // Assert
             Assert.Equal(BugParseStatus.InvalidFormat, submission.ParseStatus);
-            _emailMock.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+            _emailMock.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -91,7 +95,8 @@ namespace TaskManagementApi.Tests
             // Arrange
             var ticketId = 1;
             var ticket = new Ticket { Id = ticketId, ApprovalStatus = ApprovalStatus.PendingApproval };
-            _ticketRepo.Setup(r => r.Query()).Returns(new List<Ticket> { ticket }.AsQueryable());
+            _ticketRepo.SetupAsyncQueryable(new List<Ticket> { ticket }.AsQueryable());
+            _submissionRepo.SetupAsyncQueryable(new List<CustomerBugSubmission>().AsQueryable());
 
             // Act
             await _service.ApproveBugAsync(ticketId, new BugApprovalRequest(), 1);

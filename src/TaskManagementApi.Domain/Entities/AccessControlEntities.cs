@@ -48,7 +48,6 @@ namespace TaskManagementApi.Domain.Entities
         public bool IsOverride { get; set; } // Explicit allow overrides restrictive rules
 
         public int CreatedByUserId { get; set; }
-        public DateTime CreatedAt { get; set; }
     }
 
     public class AccessRequest : BaseEntity

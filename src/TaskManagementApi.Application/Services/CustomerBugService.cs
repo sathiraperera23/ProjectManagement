@@ -44,6 +44,7 @@ namespace TaskManagementApi.Application.Services
             _ticketService = ticketService;
             _notificationService = notificationService;
             _emailService = emailService;
+            _templateService = templateService;
             _configuration = configuration;
             _logger = logger;
         }
@@ -131,7 +132,9 @@ namespace TaskManagementApi.Application.Services
 
         private async Task<bool> IsDuplicateAsync(CustomerBugSubmission submission)
         {
-            var threshold = double.Parse(_configuration["BugDetection:SimilarityThreshold"] ?? "0.8");
+            var thresholdStr = _configuration["BugDetection:SimilarityThreshold"] ?? "0.8";
+            double.TryParse(thresholdStr, out var threshold);
+
             // Simple title matching for scaffold
             return await _ticketRepository.Query()
                 .AnyAsync(t => t.ProjectId == submission.ProjectId && t.Title == submission.ParsedTitle && !t.IsDeleted);

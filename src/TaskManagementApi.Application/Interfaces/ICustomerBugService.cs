@@ -1,5 +1,6 @@
 using TaskManagementApi.Application.DTOs.CustomerBugs;
 using TaskManagementApi.Application.DTOs.Tickets;
+using TaskManagementApi.Domain.Entities;
 
 namespace TaskManagementApi.Application.Interfaces
 {

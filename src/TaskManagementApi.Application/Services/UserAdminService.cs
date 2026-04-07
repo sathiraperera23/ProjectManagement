@@ -32,7 +32,7 @@ namespace TaskManagementApi.Application.Services
             _memberRepository = memberRepository;
             _userManager = userManager;
             _emailService = emailService;
-            _smsService = smsService;
+            _otpService = otpService;
         }
 
         public async Task<InvitationDto> InviteUserAsync(InviteUserRequest request, int userId)
@@ -45,8 +45,7 @@ namespace TaskManagementApi.Application.Services
                 RoleId = request.RoleId,
                 Token = Guid.NewGuid(),
                 ExpiresAt = DateTime.UtcNow.AddHours(48),
-                Status = InvitationStatus.Pending,
-                CreatedAt = DateTime.UtcNow
+                Status = InvitationStatus.Pending
             };
 
             await _invitationRepository.AddAsync(invitation);
@@ -69,7 +68,6 @@ namespace TaskManagementApi.Application.Services
                 Email = invitation.Email,
                 DisplayName = request.DisplayName,
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
                 Provider = "Local",
                 ProviderId = Guid.NewGuid().ToString() // or use Token
             };
@@ -99,8 +97,7 @@ namespace TaskManagementApi.Application.Services
             {
                 Name = request.Name,
                 Description = request.Description,
-                ProjectId = projectId,
-                CreatedAt = DateTime.UtcNow
+                ProjectId = projectId
             };
             await _teamRepository.AddAsync(team);
             return new TeamDto { Id = team.Id, Name = team.Name, Description = team.Description, ProjectId = projectId };

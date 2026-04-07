@@ -43,7 +43,7 @@ namespace TaskManagementApi.Tests
             _sprintRepoMock.Setup(r => r.GetByIdAsync(sprintId)).ReturnsAsync(sprint);
 
             var existingActive = new List<Sprint> { new Sprint { ProjectId = 1, SubProjectId = 1, Status = SprintStatus.Active } }.AsQueryable();
-            _sprintRepoMock.Setup(r => r.Query()).Returns(existingActive);
+            _sprintRepoMock.SetupAsyncQueryable(existingActive);
 
             // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => _service.ActivateAsync(sprintId));
@@ -59,7 +59,7 @@ namespace TaskManagementApi.Tests
             var ticket = new Ticket { Id = ticketId, SprintId = sprintId, Status = status };
             var sprint = new Sprint { Id = sprintId, Status = SprintStatus.Active, Tickets = new List<Ticket> { ticket } };
 
-            _sprintRepoMock.Setup(r => r.Query()).Returns(new List<Sprint> { sprint }.AsQueryable());
+            _sprintRepoMock.SetupAsyncQueryable(new List<Sprint> { sprint }.AsQueryable());
             _sprintRepoMock.Setup(r => r.GetByIdAsync(sprintId)).ReturnsAsync(sprint);
 
             var request = new CloseSprintRequest { Disposition = SprintClosureDisposition.MoveToBacklog };
@@ -83,7 +83,7 @@ namespace TaskManagementApi.Tests
             var ticket = new Ticket { Id = ticketId, SprintId = sprintId, Status = status };
             var sprint = new Sprint { Id = sprintId, Status = SprintStatus.Active, Tickets = new List<Ticket> { ticket } };
 
-            _sprintRepoMock.Setup(r => r.Query()).Returns(new List<Sprint> { sprint }.AsQueryable());
+            _sprintRepoMock.SetupAsyncQueryable(new List<Sprint> { sprint }.AsQueryable());
             _sprintRepoMock.Setup(r => r.GetByIdAsync(sprintId)).ReturnsAsync(sprint);
 
             var request = new CloseSprintRequest { Disposition = SprintClosureDisposition.MoveToNextSprint, NextSprintId = nextSprintId };
@@ -127,7 +127,7 @@ namespace TaskManagementApi.Tests
                 { new Ticket { StoryPoints = 10, Status = new TicketStatus { IsTerminal = true } } } };
 
             var sprints = new List<Sprint> { s1, s2 }.AsQueryable();
-            _sprintRepoMock.Setup(r => r.Query()).Returns(sprints);
+            _sprintRepoMock.SetupAsyncQueryable(sprints);
 
             // Act
             var result = await _service.GetVelocityAsync(projectId);

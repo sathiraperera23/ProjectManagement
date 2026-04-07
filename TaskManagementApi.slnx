@@ -6,6 +6,7 @@
     <Project Path="src/TaskManagementApi.Web/TaskManagementApi.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/TaskManagementApi.IntegrationTests/TaskManagementApi.IntegrationTests.csproj" />
     <Project Path="tests/TaskManagementApi.Tests/TaskManagementApi.Tests.csproj" />
   </Folder>
 </Solution>

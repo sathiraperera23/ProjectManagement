@@ -15,7 +15,6 @@ namespace TaskManagementApi.Domain.Entities
         public string? ReferenceType { get; set; } // 'Ticket', 'Sprint', 'Milestone'
 
         public bool IsRead { get; set; }
-        public DateTime CreatedAt { get; set; }
     }
 
     public class NotificationPreference : BaseEntity

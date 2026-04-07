@@ -4,6 +4,7 @@ using TaskManagementApi.Application.DTOs.Sprints;
 using TaskManagementApi.Application.Interfaces;
 using TaskManagementApi.Application.Validators;
 using TaskManagementApi.Domain.Constants;
+using TaskManagementApi.Domain.Entities;
 using TaskManagementApi.Web.Authorization;
 using System.Security.Claims;
 
@@ -169,10 +170,5 @@ namespace TaskManagementApi.Web.Controllers
             var velocity = await _sprintService.GetVelocityAsync(projectId);
             return Ok(velocity);
         }
-    }
-
-    public interface IUserManagerFacade
-    {
-        Task<User?> FindByProviderIdAsync(string providerId);
     }
 }

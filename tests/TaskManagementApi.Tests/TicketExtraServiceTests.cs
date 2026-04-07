@@ -48,6 +48,8 @@ namespace TaskManagementApi.Tests
             var userId = 100;
             var request = new CreateCommentRequest { Body = "Hello @123 and @456", IsInternalNote = false };
 
+            _commentRepoMock.SetupAsyncQueryable(new List<TicketComment>().AsQueryable());
+
             // Act
             await _service.PostCommentAsync(ticketId, request, userId);
 
@@ -67,8 +69,10 @@ namespace TaskManagementApi.Tests
             fileMock.Setup(f => f.Length).Returns(100);
             fileMock.Setup(f => f.ContentType).Returns("text/plain");
 
-            var existing = new List<TicketAttachment> { new TicketAttachment { FileName = fileName, Version = 1 } }.AsQueryable();
-            _attachmentRepoMock.Setup(r => r.Query()).Returns(existing);
+            var existing = new List<TicketAttachment> {
+                new TicketAttachment { TicketId = ticketId, FileName = fileName, Version = 1 }
+            }.AsQueryable();
+            _attachmentRepoMock.SetupAsyncQueryable(existing);
 
             // Act
             var result = await _service.UploadAttachmentAsync(ticketId, fileMock.Object, 1);
@@ -85,7 +89,7 @@ namespace TaskManagementApi.Tests
             var request = new CreateDailyUpdateRequest { ProjectId = 1, WorkedOn = "Code", PlannedNext = "Test" };
             var existing = new DailyUpdate { UserId = userId, SubmittedAt = DateTime.UtcNow.Date };
 
-            _dailyUpdateRepoMock.Setup(r => r.Query()).Returns(new List<DailyUpdate> { existing }.AsQueryable());
+            _dailyUpdateRepoMock.SetupAsyncQueryable(new List<DailyUpdate> { existing }.AsQueryable());
 
             // Act
             await _service.PostDailyUpdateAsync(request, userId);

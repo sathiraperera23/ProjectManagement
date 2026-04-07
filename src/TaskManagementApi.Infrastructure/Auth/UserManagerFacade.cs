@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using TaskManagementApi.Domain.Entities;
-using TaskManagementApi.Web.Controllers;
+using TaskManagementApi.Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace TaskManagementApi.Infrastructure.Auth

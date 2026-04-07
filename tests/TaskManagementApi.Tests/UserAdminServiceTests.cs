@@ -7,6 +7,8 @@ using TaskManagementApi.Application.DTOs.UserAdmin;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace TaskManagementApi.Tests
 {
@@ -18,7 +20,7 @@ namespace TaskManagementApi.Tests
         private readonly Mock<IRepository<TeamMember>> _memberRepo;
         private readonly Mock<UserManager<User>> _userManager;
         private readonly Mock<IEmailService> _emailMock;
-        private readonly Mock<ISmsService> _smsMock;
+        private readonly Mock<IOtpService> _otpMock;
         private readonly UserAdminService _service;
 
         public UserAdminServiceTests()
@@ -32,11 +34,11 @@ namespace TaskManagementApi.Tests
             _userManager = new Mock<UserManager<User>>(store.Object, null, null, null, null, null, null, null, null);
 
             _emailMock = new Mock<IEmailService>();
-            _smsMock = new Mock<ISmsService>();
+            _otpMock = new Mock<IOtpService>();
 
             _service = new UserAdminService(
                 _invitationRepo.Object, _userRepo.Object, _teamRepo.Object,
-                _memberRepo.Object, _userManager.Object, _emailMock.Object, _smsMock.Object);
+                _memberRepo.Object, _userManager.Object, _emailMock.Object, _otpMock.Object);
         }
 
         [Fact]
@@ -55,22 +57,21 @@ namespace TaskManagementApi.Tests
         }
 
         [Fact]
-        public async Task VerifyMobile_ClearsCode_OnSuccess()
+        public async Task VerifyMobile_CallsOtpService()
         {
             // Arrange
             var userId = 1;
             var code = "123456";
-            var user = new User { Id = userId, MobileVerificationCode = code };
+            var user = new User { Id = userId, MobileNumber = "1234567890" };
             _userRepo.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
+            _otpMock.Setup(s => s.VerifyOtpAsync(user.MobileNumber, code, userId)).ReturnsAsync(true);
 
             // Act
             var result = await _service.VerifyMobileAsync(userId, code);
 
             // Assert
             Assert.True(result);
-            Assert.Null(user.MobileVerificationCode);
-            Assert.True(user.MobileVerified);
-            _userRepo.Verify(r => r.UpdateAsync(user), Times.Once);
+            _otpMock.Verify(s => s.VerifyOtpAsync(user.MobileNumber, code, userId), Times.Once);
         }
 
         [Fact]
@@ -78,8 +79,12 @@ namespace TaskManagementApi.Tests
         {
             // Arrange
             var token = Guid.NewGuid();
+            // UserInvitation doesn't have CreatedAt anymore, using BaseEntity one
             var invitation = new UserInvitation { Token = token, Status = InvitationStatus.Pending, ExpiresAt = DateTime.UtcNow.AddHours(-1) };
-            _invitationRepo.Setup(r => r.Query()).Returns(new List<UserInvitation> { invitation }.AsQueryable());
+
+            // Mocking IQueryable for GenericRepository.Query()
+            var data = new List<UserInvitation> { invitation }.AsQueryable();
+            _invitationRepo.Setup(r => r.Query()).Returns(data);
 
             // Act & Assert
             await Assert.ThrowsAsync<InvalidOperationException>(() => _service.AcceptInvitationAsync(new AcceptInvitationRequest { Token = token }));

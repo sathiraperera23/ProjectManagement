@@ -20,6 +20,11 @@ namespace TaskManagementApi.Application.Interfaces
         Task<IEnumerable<NotificationLogDto>> GetNotificationLogsAsync(int page, int pageSize);
     }
 
+    public interface INotificationHubService
+    {
+        Task SendNotificationAsync(string providerId, NotificationDto notification);
+    }
+
     public class NotificationEvent
     {
         public NotificationEventType Type { get; set; }

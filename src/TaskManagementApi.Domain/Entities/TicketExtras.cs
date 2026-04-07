@@ -16,15 +16,12 @@ namespace TaskManagementApi.Domain.Entities
 
         public bool IsInternalNote { get; set; } // visible to team only, not guest viewers
 
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-
         public ICollection<TicketComment> Replies { get; set; } = new List<TicketComment>();
         public ICollection<CommentMention> Mentions { get; set; } = new List<CommentMention>();
         public ICollection<CommentReaction> Reactions { get; set; } = new List<CommentReaction>();
     }
 
-    public class CommentMention
+    public class CommentMention : BaseEntity
     {
         public int CommentId { get; set; }
         public TicketComment Comment { get; set; } = null!;
@@ -44,15 +41,13 @@ namespace TaskManagementApi.Domain.Entities
         public string Emoji { get; set; } = null!;
     }
 
-    public class TicketWatcher
+    public class TicketWatcher : BaseEntity
     {
         public int TicketId { get; set; }
         public Ticket Ticket { get; set; } = null!;
 
         public int UserId { get; set; }
         public User User { get; set; } = null!;
-
-        public DateTime CreatedAt { get; set; }
     }
 
     public class TicketAttachment : BaseEntity
@@ -71,7 +66,6 @@ namespace TaskManagementApi.Domain.Entities
         public int UploadedByUserId { get; set; }
         public User UploadedByUser { get; set; } = null!;
 
-        public DateTime UploadedAt { get; set; }
         public int Version { get; set; } // increments on re-upload of same filename
     }
 
@@ -88,7 +82,6 @@ namespace TaskManagementApi.Domain.Entities
         public string? Blockers { get; set; }
 
         public DateTime SubmittedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
 
         public ICollection<DailyUpdateTicketLink> TicketLinks { get; set; } = new List<DailyUpdateTicketLink>();
     }

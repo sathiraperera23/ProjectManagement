@@ -54,19 +54,20 @@ namespace TaskManagementApi.Tests
             // 8 tickets in WIP-related statuses
             var tickets = new List<Ticket>();
             for (int i = 0; i < 8; i++)
-                tickets.Add(new Ticket { ProjectId = projectId, Status = new TicketStatus { Name = "WIP" } });
+                tickets.Add(new Ticket { Id = i+1, ProjectId = projectId, Status = new TicketStatus { Name = "WIP" } });
 
-            _ticketRepo.Setup(r => r.Query()).Returns(tickets.AsQueryable());
+            _ticketRepo.SetupAsyncQueryable(tickets.AsQueryable());
 
             // Limit is 10
             var limit = new ProjectWipLimit { ProjectId = projectId, MaxWip = 10 };
-            _wipLimitRepo.Setup(r => r.Query()).Returns(new List<ProjectWipLimit> { limit }.AsQueryable());
+            _wipLimitRepo.SetupAsyncQueryable(new List<ProjectWipLimit> { limit }.AsQueryable());
 
             // Other mocks to avoid nulls
-            _milestoneRepo.Setup(r => r.Query()).Returns(new List<Milestone>().AsQueryable());
-            _sprintRepo.Setup(r => r.Query()).Returns(new List<Sprint>().AsQueryable());
-            _dailyUpdateRepo.Setup(r => r.Query()).Returns(new List<DailyUpdate>().AsQueryable());
-            _delayRepo.Setup(r => r.Query()).Returns(new List<DelayRecord>().AsQueryable());
+            _milestoneRepo.SetupAsyncQueryable(new List<Milestone>().AsQueryable());
+            _sprintRepo.SetupAsyncQueryable(new List<Sprint>().AsQueryable());
+            _dailyUpdateRepo.SetupAsyncQueryable(new List<DailyUpdate>().AsQueryable());
+            _delayRepo.SetupAsyncQueryable(new List<DelayRecord>().AsQueryable());
+            _budgetRepo.SetupAsyncQueryable(new List<ProjectBudget>().AsQueryable());
 
             // Act
             var result = await _service.GetProjectSummaryAsync(projectId);
@@ -86,16 +87,17 @@ namespace TaskManagementApi.Tests
 
             var tickets = new List<Ticket>();
             for (int i = 0; i < 11; i++)
-                tickets.Add(new Ticket { ProjectId = projectId, Status = new TicketStatus { Name = "WIP" } });
-            _ticketRepo.Setup(r => r.Query()).Returns(tickets.AsQueryable());
+                tickets.Add(new Ticket { Id = i+1, ProjectId = projectId, Status = new TicketStatus { Name = "WIP" } });
+            _ticketRepo.SetupAsyncQueryable(tickets.AsQueryable());
 
             var limit = new ProjectWipLimit { ProjectId = projectId, MaxWip = 10 };
-            _wipLimitRepo.Setup(r => r.Query()).Returns(new List<ProjectWipLimit> { limit }.AsQueryable());
+            _wipLimitRepo.SetupAsyncQueryable(new List<ProjectWipLimit> { limit }.AsQueryable());
 
-            _milestoneRepo.Setup(r => r.Query()).Returns(new List<Milestone>().AsQueryable());
-            _sprintRepo.Setup(r => r.Query()).Returns(new List<Sprint>().AsQueryable());
-            _dailyUpdateRepo.Setup(r => r.Query()).Returns(new List<DailyUpdate>().AsQueryable());
-            _delayRepo.Setup(r => r.Query()).Returns(new List<DelayRecord>().AsQueryable());
+            _milestoneRepo.SetupAsyncQueryable(new List<Milestone>().AsQueryable());
+            _sprintRepo.SetupAsyncQueryable(new List<Sprint>().AsQueryable());
+            _dailyUpdateRepo.SetupAsyncQueryable(new List<DailyUpdate>().AsQueryable());
+            _delayRepo.SetupAsyncQueryable(new List<DelayRecord>().AsQueryable());
+            _budgetRepo.SetupAsyncQueryable(new List<ProjectBudget>().AsQueryable());
 
             // Act
             var result = await _service.GetProjectSummaryAsync(projectId);
