@@ -65,8 +65,7 @@ namespace TaskManagementApi.Application.Services
                 ParentCommentId = request.ParentCommentId,
                 Body = request.Body,
                 AuthorId = userId,
-                IsInternalNote = request.IsInternalNote,
-                CreatedAt = DateTime.UtcNow
+                IsInternalNote = request.IsInternalNote
             };
 
             await _commentRepository.AddAsync(comment);
@@ -87,7 +86,6 @@ namespace TaskManagementApi.Application.Services
             if (comment == null || comment.AuthorId != userId) return;
 
             comment.Body = request.Body;
-            comment.UpdatedAt = DateTime.UtcNow;
             await _commentRepository.UpdateAsync(comment);
         }
 
@@ -117,7 +115,7 @@ namespace TaskManagementApi.Application.Services
             var exists = await _watcherRepository.Query().AnyAsync(w => w.TicketId == ticketId && w.UserId == userId);
             if (!exists)
             {
-                await _watcherRepository.AddAsync(new TicketWatcher { TicketId = ticketId, UserId = userId, CreatedAt = DateTime.UtcNow });
+                await _watcherRepository.AddAsync(new TicketWatcher { TicketId = ticketId, UserId = userId });
             }
         }
 
@@ -126,11 +124,7 @@ namespace TaskManagementApi.Application.Services
             var watcher = await _watcherRepository.Query().FirstOrDefaultAsync(w => w.TicketId == ticketId && w.UserId == userId);
             if (watcher != null)
             {
-                // This entity doesn't have an 'Id' primary key in the conventional sense if it's a composite key,
-                // but our GenericRepository expects an int id. Let's assume we handle it.
-                // For now, let's use the DB context directly or implement a DeleteByCompositeKey in Repo.
-                // To keep it simple for this scaffold:
-                await _watcherRepository.DeleteAsync(0); // This will fail with GenericRepo if not careful.
+                await _watcherRepository.DeleteAsync(watcher.Id);
             }
         }
 
@@ -162,7 +156,6 @@ namespace TaskManagementApi.Application.Services
                 ContentType = file.ContentType,
                 FileSizeBytes = file.Length,
                 UploadedByUserId = userId,
-                UploadedAt = DateTime.UtcNow,
                 Version = (existing?.Version ?? 0) + 1
             };
 
@@ -179,7 +172,6 @@ namespace TaskManagementApi.Application.Services
                 ExternalUrl = request.ExternalUrl,
                 ExternalLabel = request.ExternalLabel,
                 UploadedByUserId = userId,
-                UploadedAt = DateTime.UtcNow,
                 Version = 1
             };
             await _attachmentRepository.AddAsync(attachment);
@@ -235,7 +227,6 @@ namespace TaskManagementApi.Application.Services
                 update.WorkedOn = request.WorkedOn;
                 update.PlannedNext = request.PlannedNext;
                 update.Blockers = request.Blockers;
-                update.UpdatedAt = DateTime.UtcNow;
                 await _dailyUpdateRepository.UpdateAsync(update);
             }
 
@@ -251,7 +242,6 @@ namespace TaskManagementApi.Application.Services
             update.WorkedOn = request.WorkedOn;
             update.PlannedNext = request.PlannedNext;
             update.Blockers = request.Blockers;
-            update.UpdatedAt = DateTime.UtcNow;
             await _dailyUpdateRepository.UpdateAsync(update);
         }
 
@@ -331,7 +321,7 @@ namespace TaskManagementApi.Application.Services
                 ExternalLabel = a.ExternalLabel,
                 UploadedByUserId = a.UploadedByUserId,
                 UploadedByUserName = a.UploadedByUser?.DisplayName ?? "Unknown",
-                UploadedAt = a.UploadedAt,
+                UploadedAt = a.CreatedAt,
                 Version = a.Version
             };
         }
