@@ -48,17 +48,17 @@ namespace TaskManagementApi.Tests
             var logDate = DateTime.UtcNow;
 
             var budget = new ProjectBudget { ProjectId = projectId, ContractValue = 1000, BudgetAmount = 800 };
-            _budgetRepo.Setup(r => r.Query()).Returns(new List<ProjectBudget> { budget }.AsQueryable());
+            _budgetRepo.SetupAsyncQueryable(new List<ProjectBudget> { budget }.AsQueryable());
 
             var timeLog = new TimeLog { TicketId = ticketId, UserId = userId, HoursLogged = 5, LoggedAt = logDate };
             var ticket = new Ticket { Id = ticketId, ProjectId = projectId };
             timeLog.Ticket = ticket;
-            _timeLogRepo.Setup(r => r.Query()).Returns(new List<TimeLog> { timeLog }.AsQueryable());
+            _timeLogRepo.SetupAsyncQueryable(new List<TimeLog> { timeLog }.AsQueryable());
 
             var rate = new UserRate { UserId = userId, HourlyRate = 100, EffectiveFrom = logDate.AddDays(-1) };
-            _userRateRepo.Setup(r => r.Query()).Returns(new List<UserRate> { rate }.AsQueryable());
+            _userRateRepo.SetupAsyncQueryable(new List<UserRate> { rate }.AsQueryable());
 
-            _ticketRepo.Setup(r => r.Query()).Returns(new List<Ticket> { ticket }.AsQueryable());
+            _ticketRepo.SetupAsyncQueryable(new List<Ticket> { ticket }.AsQueryable());
 
             // Act
             var result = await _service.GetCostingReportAsync(projectId);
@@ -77,7 +77,7 @@ namespace TaskManagementApi.Tests
             var itemWithTicket = new BacklogItem { Id = 1, ProjectId = projectId, TicketLinks = new List<BacklogItemTicketLink> { new BacklogItemTicketLink { Ticket = new Ticket { TicketNumber = "T1" } } } };
             var itemWithoutTicket = new BacklogItem { Id = 2, ProjectId = projectId, TicketLinks = new List<BacklogItemTicketLink>() };
 
-            _backlogRepo.Setup(r => r.Query()).Returns(new List<BacklogItem> { itemWithTicket, itemWithoutTicket }.AsQueryable());
+            _backlogRepo.SetupAsyncQueryable(new List<BacklogItem> { itemWithTicket, itemWithoutTicket }.AsQueryable());
 
             // Act
             var result = await _service.GetRtmReportAsync(projectId);

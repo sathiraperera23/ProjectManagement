@@ -25,8 +25,6 @@ namespace TaskManagementApi.Domain.Entities
         public int CreatedByUserId { get; set; }
         public User CreatedBy { get; set; } = null!;
 
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
         public DateTime? ClosedAt { get; set; }
 
         public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();

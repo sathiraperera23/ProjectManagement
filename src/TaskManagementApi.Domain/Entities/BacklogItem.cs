@@ -2,9 +2,8 @@ using TaskManagementApi.Domain.Enums;
 
 namespace TaskManagementApi.Domain.Entities
 {
-    public class BacklogItem
+    public class BacklogItem : BaseEntity
     {
-        public int Id { get; set; }
         public string Title { get; set; } = null!;
         public string Description { get; set; } = null!;
         public BacklogItemType Type { get; set; }
@@ -21,10 +20,8 @@ namespace TaskManagementApi.Domain.Entities
         public int? ApprovedByUserId { get; set; }
         public DateTime? ApprovedAt { get; set; }
         public string? RejectionReason { get; set; }
-        public bool IsDeleted { get; set; }
-        public DateTime? DeletedAt { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
+        public string? UseCaseNumber { get; set; }
+        public string? TestCaseNumber { get; set; }
         public ICollection<BacklogItemVersion> Versions { get; set; } = new List<BacklogItemVersion>();
         public ICollection<BacklogAttachment> Attachments { get; set; } = new List<BacklogAttachment>();
         public ICollection<BacklogItemTicketLink> TicketLinks { get; set; } = new List<BacklogItemTicketLink>();

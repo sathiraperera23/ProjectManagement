@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TaskManagementApi.Application.DTOs.Reports;
 using TaskManagementApi.Application.Interfaces;
 using TaskManagementApi.Domain.Constants;
+using TaskManagementApi.Domain.Entities;
 using TaskManagementApi.Web.Authorization;
 using System.Security.Claims;
 
@@ -70,10 +72,7 @@ namespace TaskManagementApi.Web.Controllers
         [HttpGet("/api/projects/{projectId}/escalation-rules")]
         public async Task<IActionResult> GetEscalationRules(int projectId)
         {
-            var rule = await _delayRepository.Query() // Using delayRepository as a shortcut for access
-                .SelectMany(d => d.Ticket.Project.Products.SelectMany(p => p.SubProjects.SelectMany(s => s.Tickets.Select(t => t.Project)))) // This is wrong, let's just use generic repo if available
-                .FirstOrDefaultAsync(p => p.Id == projectId);
-            // I'll just return a default for now as the GenericRepository<EscalationRule> is not easily accessible here without injection
+            // Placeholder for real logic
             return Ok(new { projectId, EscalateAfterDays = 3, SecondLevelAfterDays = 7 });
         }
 

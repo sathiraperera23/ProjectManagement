@@ -6,7 +6,6 @@ using TaskManagementApi.Application.Interfaces;
 using TaskManagementApi.Application.Services;
 using TaskManagementApi.Domain.Entities;
 using TaskManagementApi.Domain.Enums;
-using TaskManagementApi.Web.Hubs;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
@@ -21,7 +20,7 @@ namespace TaskManagementApi.Tests
         private readonly Mock<IRepository<User>> _userRepoMock;
         private readonly Mock<IEmailService> _emailMock;
         private readonly Mock<ISmsService> _smsMock;
-        private readonly Mock<IHubContext<NotificationHub>> _hubMock;
+        private readonly Mock<INotificationHubService> _hubMock;
         private readonly Mock<IConfiguration> _configMock;
         private readonly NotificationService _service;
 
@@ -34,7 +33,7 @@ namespace TaskManagementApi.Tests
             _userRepoMock = new Mock<IRepository<User>>();
             _emailMock = new Mock<IEmailService>();
             _smsMock = new Mock<ISmsService>();
-            _hubMock = new Mock<IHubContext<NotificationHub>>();
+            _hubMock = new Mock<INotificationHubService>();
             _configMock = new Mock<IConfiguration>();
 
             _service = new NotificationService(
@@ -58,7 +57,7 @@ namespace TaskManagementApi.Tests
             await _service.SendAsync(e);
 
             // Assert
-            _emailMock.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _emailMock.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -76,11 +75,11 @@ namespace TaskManagementApi.Tests
 
             var e = new NotificationEvent { Type = NotificationEventType.TicketAssigned, SpecificUserId = userId };
 
-            _userRepoMock.Setup(r => r.Query()).Returns(new List<User> { user }.AsQueryable());
-            _preferenceRepoMock.Setup(r => r.Query()).Returns(new List<NotificationPreference>().AsQueryable());
+            _userRepoMock.SetupAsyncQueryable(new List<User> { user }.AsQueryable());
+            _preferenceRepoMock.SetupAsyncQueryable(new List<NotificationPreference>().AsQueryable());
+            _ruleRepoMock.SetupAsyncQueryable(new List<NotificationRule>().AsQueryable());
 
-            // Mock current time as 10 PM
-            // In a real app we'd inject ISystemClock, but for this test let's adjust user hours to encompass current UTC time
+            // Mock current time as inside quiet hours
             var currentUtc = DateTime.UtcNow.TimeOfDay;
             user.QuietHourStart = currentUtc.Subtract(TimeSpan.FromHours(1));
             user.QuietHourEnd = currentUtc.Add(TimeSpan.FromHours(1));
@@ -89,7 +88,7 @@ namespace TaskManagementApi.Tests
             await _service.SendAsync(e);
 
             // Assert
-            _emailMock.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _emailMock.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -102,11 +101,12 @@ namespace TaskManagementApi.Tests
             _configMock.Setup(c => c["Org:SmsQuietHours:End"]).Returns("23:59"); // Always quiet
 
             var e = new NotificationEvent { Type = NotificationEventType.TicketAssigned, SpecificUserId = userId };
-            _userRepoMock.Setup(r => r.Query()).Returns(new List<User> { user }.AsQueryable());
+            _userRepoMock.SetupAsyncQueryable(new List<User> { user }.AsQueryable());
+            _ruleRepoMock.SetupAsyncQueryable(new List<NotificationRule>().AsQueryable());
 
             // Force SMS preference
             var pref = new List<NotificationPreference> { new NotificationPreference { UserId = userId, EventType = e.Type, Sms = true } };
-            _preferenceRepoMock.Setup(r => r.Query()).Returns(pref.AsQueryable());
+            _preferenceRepoMock.SetupAsyncQueryable(pref.AsQueryable());
 
             // Act
             await _service.SendAsync(e);
@@ -129,20 +129,21 @@ namespace TaskManagementApi.Tests
                 SpecificUserId = userId
             };
 
-            _userRepoMock.Setup(r => r.Query()).Returns(new List<User> { user }.AsQueryable());
+            _userRepoMock.SetupAsyncQueryable(new List<User> { user }.AsQueryable());
+            _ruleRepoMock.SetupAsyncQueryable(new List<NotificationRule>().AsQueryable());
 
             // Global: Email ON
             var globalPref = new NotificationPreference { UserId = userId, ProjectId = null, EventType = e.Type, Email = true };
             // Project: Email OFF
             var projectPref = new NotificationPreference { UserId = userId, ProjectId = projectId, EventType = e.Type, Email = false };
 
-            _preferenceRepoMock.Setup(r => r.Query()).Returns(new List<NotificationPreference> { globalPref, projectPref }.AsQueryable());
+            _preferenceRepoMock.SetupAsyncQueryable(new List<NotificationPreference> { globalPref, projectPref }.AsQueryable());
 
             // Act
             await _service.SendAsync(e);
 
             // Assert
-            _emailMock.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            _emailMock.Verify(m => m.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
     }
 }

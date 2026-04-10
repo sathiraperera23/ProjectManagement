@@ -46,10 +46,12 @@ namespace TaskManagementApi.Tests
             {
                 Id = backlogId,
                 Status = BacklogItemStatus.Approved,
-                Title = "Old Title"
+                Title = "Old Title",
+                Owner = new User { Id = 1, DisplayName = "Owner" }
             };
 
             _backlogRepoMock.Setup(r => r.GetByIdAsync(backlogId)).ReturnsAsync(item);
+            _backlogRepoMock.SetupAsyncQueryable(new List<BacklogItem> { item }.AsQueryable());
 
             // Mock version query
             var versions = new List<BacklogItemVersion>
@@ -57,8 +59,7 @@ namespace TaskManagementApi.Tests
                 new BacklogItemVersion { BacklogItemId = backlogId, VersionNumber = 1 }
             }.AsQueryable();
 
-            // This is tricky with IQueryable and Moq without extensions, but let's assume simple repo
-            _versionRepoMock.Setup(r => r.Query()).Returns(versions);
+            _versionRepoMock.SetupAsyncQueryable(versions);
 
             var request = new UpdateBacklogItemRequest
             {

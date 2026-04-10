@@ -31,7 +31,7 @@ namespace TaskManagementApi.Tests
             // Arrange
             var mobile = "1234567890";
             var existing = new List<MobileOtp> { new MobileOtp { PhoneNumber = mobile, IsActive = true } }.AsQueryable();
-            _otpRepoMock.Setup(r => r.Query()).Returns(existing);
+            _otpRepoMock.SetupAsyncQueryable(existing);
 
             // Act
             await _service.SendOtpAsync(mobile);
@@ -49,7 +49,7 @@ namespace TaskManagementApi.Tests
             var code = "123456";
             var userId = 1;
             var otp = new MobileOtp { PhoneNumber = mobile, Code = 123456, IsActive = true, CreatedAt = DateTime.UtcNow };
-            _otpRepoMock.Setup(r => r.Query()).Returns(new List<MobileOtp> { otp }.AsQueryable());
+            _otpRepoMock.SetupAsyncQueryable(new List<MobileOtp> { otp }.AsQueryable());
 
             var user = new User { Id = userId, MobileNumber = mobile };
             _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
@@ -70,7 +70,7 @@ namespace TaskManagementApi.Tests
             var mobile = "1234567890";
             var code = "123456";
             var otp = new MobileOtp { PhoneNumber = mobile, Code = 123456, IsActive = true, CreatedAt = DateTime.UtcNow.AddMinutes(-10) };
-            _otpRepoMock.Setup(r => r.Query()).Returns(new List<MobileOtp> { otp }.AsQueryable());
+            _otpRepoMock.SetupAsyncQueryable(new List<MobileOtp> { otp }.AsQueryable());
             _configMock.Setup(c => c["Otp:SmsExpirationSeconds"]).Returns("300");
 
             // Act

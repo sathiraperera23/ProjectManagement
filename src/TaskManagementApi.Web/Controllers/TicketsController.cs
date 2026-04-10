@@ -4,6 +4,8 @@ using TaskManagementApi.Application.Interfaces;
 using TaskManagementApi.Domain.Enums;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using TaskManagementApi.Web.Authorization;
+using TaskManagementApi.Domain.Constants;
 
 namespace TaskManagementApi.Web.Controllers
 {
@@ -13,18 +15,27 @@ namespace TaskManagementApi.Web.Controllers
     public class TicketsController : ControllerBase
     {
         private readonly ITicketService _ticketService;
+        private readonly IUserManagerFacade _userManager;
 
-        public TicketsController(ITicketService ticketService)
+        public TicketsController(ITicketService ticketService, IUserManagerFacade userManager)
         {
             _ticketService = ticketService;
+            _userManager = userManager;
         }
 
-        private int GetCurrentUserId() => int.Parse(User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+        private async Task<int> GetCurrentUserId()
+        {
+            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (providerId == null) return 0;
+            var user = await _userManager.FindByProviderIdAsync(providerId);
+            return user?.Id ?? 0;
+        }
 
         [HttpPost]
+        [RequirePermission(Permissions.CreateTicket)]
         public async Task<ActionResult<TicketResponse>> CreateTicket(CreateTicketRequest request)
         {
-            var response = await _ticketService.CreateTicketAsync(request, GetCurrentUserId());
+            var response = await _ticketService.CreateTicketAsync(request, await GetCurrentUserId());
             return CreatedAtAction(nameof(GetTicket), new { id = response.Id }, response);
         }
 
@@ -51,18 +62,20 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPut("{id}")]
+        [RequirePermission(Permissions.EditAllTickets)]
         public async Task<IActionResult> UpdateTicket(int id, UpdateTicketRequest request)
         {
-            await _ticketService.UpdateTicketAsync(id, request, GetCurrentUserId());
+            await _ticketService.UpdateTicketAsync(id, request, await GetCurrentUserId());
             return NoContent();
         }
 
         [HttpPut("{id}/status")]
+        [RequirePermission(Permissions.ChangeStatus)]
         public async Task<IActionResult> UpdateTicketStatus(int id, UpdateTicketStatusRequest request)
         {
             try
             {
-                await _ticketService.UpdateTicketStatusAsync(id, request, GetCurrentUserId());
+                await _ticketService.UpdateTicketStatusAsync(id, request, await GetCurrentUserId());
                 return NoContent();
             }
             catch (Exception ex)
@@ -72,13 +85,15 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPut("{id}/assign")]
+        [RequirePermission(Permissions.ReassignTicket)]
         public async Task<IActionResult> AssignTicket(int id, [FromBody] List<int> assigneeIds)
         {
-            await _ticketService.AssignTicketAsync(id, assigneeIds, GetCurrentUserId());
+            await _ticketService.AssignTicketAsync(id, assigneeIds, await GetCurrentUserId());
             return NoContent();
         }
 
         [HttpDelete("{id}")]
+        [RequirePermission(Permissions.DeleteTicket)]
         public async Task<IActionResult> DeleteTicket(int id)
         {
             await _ticketService.SoftDeleteTicketAsync(id);
@@ -86,27 +101,31 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPut("bulk/status")]
+        [RequirePermission(Permissions.ChangeStatus)]
         public async Task<IActionResult> BulkUpdateStatus(BulkUpdateStatusRequest request)
         {
-            await _ticketService.BulkUpdateStatusAsync(request, GetCurrentUserId());
+            await _ticketService.BulkUpdateStatusAsync(request, await GetCurrentUserId());
             return NoContent();
         }
 
         [HttpPut("bulk/assign")]
+        [RequirePermission(Permissions.ReassignTicket)]
         public async Task<IActionResult> BulkAssign(BulkAssignRequest request)
         {
-            await _ticketService.BulkAssignAsync(request, GetCurrentUserId());
+            await _ticketService.BulkAssignAsync(request, await GetCurrentUserId());
             return NoContent();
         }
 
         [HttpPut("bulk/priority")]
+        [RequirePermission(Permissions.EditAllTickets)]
         public async Task<IActionResult> BulkUpdatePriority(BulkUpdatePriorityRequest request)
         {
-            await _ticketService.BulkUpdatePriorityAsync(request, GetCurrentUserId());
+            await _ticketService.BulkUpdatePriorityAsync(request, await GetCurrentUserId());
             return NoContent();
         }
 
         [HttpPost("{id}/links")]
+        [RequirePermission(Permissions.EditAllTickets)]
         public async Task<IActionResult> LinkTickets(int id, LinkTicketRequest request)
         {
             await _ticketService.LinkTicketsAsync(id, request);
@@ -114,6 +133,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpDelete("{id}/links/{linkId}")]
+        [RequirePermission(Permissions.EditAllTickets)]
         public async Task<IActionResult> RemoveLink(int id, int linkId)
         {
             await _ticketService.RemoveLinkAsync(id, linkId);
