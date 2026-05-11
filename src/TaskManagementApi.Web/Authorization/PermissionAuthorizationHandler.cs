@@ -27,29 +27,36 @@ namespace TaskManagementApi.Web.Authorization
             AuthorizationHandlerContext context,
             PermissionRequirement requirement)
         {
-            // Extract SSO ProviderId (Keycloak 'sub') from JWT claims
-            var providerId = context.User.FindFirst("sub")?.Value;
-            if (providerId == null)
-            {
-                providerId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            }
+            int userId = 0;
+            var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-            if (providerId == null)
+            if (userIdClaim != null && int.TryParse(userIdClaim, out userId))
             {
-                context.Fail();
-                return;
+                // Found userId in claims
             }
-
-            // Look up local user by ProviderId
-            // In a real high-traffic app, we might cache this mapping
-            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.ProviderId == providerId);
-            if (user == null)
+            else
             {
-                context.Fail();
-                return;
-            }
+                // Fallback to ProviderId (for backward compatibility or SSO)
+                var providerId = context.User.FindFirst("sub")?.Value;
+                if (providerId == null)
+                {
+                    providerId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                }
 
-            var userId = user.Id;
+                if (providerId == null)
+                {
+                    context.Fail();
+                    return;
+                }
+
+                var user = await _userManager.Users.FirstOrDefaultAsync(u => u.ProviderId == providerId);
+                if (user == null)
+                {
+                    context.Fail();
+                    return;
+                }
+                userId = user.Id;
+            }
 
             // Extract projectId from route values
             var httpContext = _httpContextAccessor.HttpContext;

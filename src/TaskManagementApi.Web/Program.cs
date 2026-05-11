@@ -17,6 +17,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,33 +46,32 @@ builder.Services.AddIdentity<User, Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// 2. Keycloak JWT Bearer validation
-var keycloakUrl = builder.Configuration["Keycloak:AuthServerUrl"];
-var realm = builder.Configuration["Keycloak:Realm"];
-var clientId = builder.Configuration["Keycloak:ClientId"];
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+// 2. Local JWT Bearer validation
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.Authority = $"{keycloakUrl}/realms/{realm}";
-        options.Audience = clientId;
-        options.RequireHttpsMetadata = false; // set true in production
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "default_secret_key_at_least_32_chars"))
+    };
+});
 
 builder.Services.AddAuthorization();
 
-// 3. Keycloak role converter
-builder.Services.AddSingleton<IClaimsTransformation, KeycloakJwtRoleConverter>();
-
-// 4. Register KeycloakAuthService with HttpClient
-builder.Services.AddHttpClient<IKeycloakAuthService, KeycloakAuthService>();
+// 4. Register Auth Service
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Services
 builder.Services.AddScoped<IRoleService, RoleService>();

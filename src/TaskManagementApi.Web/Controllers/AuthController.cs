@@ -9,20 +9,35 @@ namespace TaskManagementApi.Web.Controllers
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly IKeycloakAuthService _authService;
+        private readonly IAuthService _authService;
 
-        public AuthController(IKeycloakAuthService authService)
+        public AuthController(IAuthService authService)
         {
             _authService = authService;
         }
 
+        [HttpPost("register")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        {
+            var validator = new RegisterRequestValidator();
+            var result = await validator.ValidateAsync(request);
+            if (!result.IsValid)
+                return BadRequest(result.Errors.Select(e => e.ErrorMessage));
+
+            var success = await _authService.RegisterAsync(request);
+            if (success)
+                return Ok(new { Message = "User registered successfully" });
+
+            return BadRequest("User registration failed");
+        }
+
         [HttpPost("login")]
         [AllowAnonymous]
-        [Consumes("application/x-www-form-urlencoded")]
-        public async Task<IActionResult> Login([FromForm] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var validator = new LoginRequestValidator();
-            var result = validator.Validate(request);
+            var result = await validator.ValidateAsync(request);
             if (!result.IsValid)
                 return BadRequest(result.Errors.Select(e => e.ErrorMessage));
             try
@@ -30,9 +45,13 @@ namespace TaskManagementApi.Web.Controllers
                 var tokens = await _authService.LoginAsync(request.Username, request.Password);
                 return Ok(tokens);
             }
-            catch (HttpRequestException)
+            catch (UnauthorizedAccessException)
             {
                 return Unauthorized("Invalid username or password");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
             }
         }
 
@@ -45,7 +64,11 @@ namespace TaskManagementApi.Web.Controllers
                 var tokens = await _authService.RefreshAsync(request.RefreshToken);
                 return Ok(tokens);
             }
-            catch (HttpRequestException)
+            catch (NotImplementedException)
+            {
+                return StatusCode(501, "Refresh token functionality is not implemented yet");
+            }
+            catch (Exception)
             {
                 return Unauthorized("Invalid or expired refresh token");
             }
