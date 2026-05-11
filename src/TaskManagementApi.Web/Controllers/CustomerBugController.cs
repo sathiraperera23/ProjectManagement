@@ -15,21 +15,17 @@ namespace TaskManagementApi.Web.Controllers
     {
         private readonly ICustomerBugService _bugService;
         private readonly IBugReportTemplateService _templateService;
-        private readonly IUserManagerFacade _userManager;
 
-        public CustomerBugController(ICustomerBugService bugService, IBugReportTemplateService templateService, IUserManagerFacade userManager)
+        public CustomerBugController(ICustomerBugService bugService, IBugReportTemplateService templateService)
         {
             _bugService = bugService;
             _templateService = templateService;
-            _userManager = userManager;
         }
 
-        private async Task<int> GetCurrentUserId()
+        private Task<int> GetCurrentUserId()
         {
-            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (providerId == null) return 0;
-            var user = await _userManager.FindByProviderIdAsync(providerId);
-            return user?.Id ?? 0;
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
         }
 
         [HttpGet("projects/{projectId}/bug-submissions")]

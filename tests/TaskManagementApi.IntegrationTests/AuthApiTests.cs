@@ -32,16 +32,17 @@ namespace TaskManagementApi.IntegrationTests
             // 2. Login
             var loginRequest = new LoginRequest
             {
-                Username = "newuser@example.com",
+                Email = "newuser@example.com",
                 Password = "Password123!"
             };
 
             var loginResponse = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
             Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
-            var tokens = await loginResponse.Content.ReadFromJsonAsync<TokenResponse>();
-            Assert.NotNull(tokens);
-            Assert.NotNull(tokens.AccessToken);
+            var response = await loginResponse.Content.ReadFromJsonAsync<AuthResponse>();
+            Assert.NotNull(response);
+            Assert.NotNull(response.AccessToken);
+            Assert.Equal("newuser@example.com", response.User.Email);
         }
 
         [Fact]
@@ -49,7 +50,7 @@ namespace TaskManagementApi.IntegrationTests
         {
             var loginRequest = new LoginRequest
             {
-                Username = "nonexistent@example.com",
+                Email = "nonexistent@example.com",
                 Password = "WrongPassword"
             };
 

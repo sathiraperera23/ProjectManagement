@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using TaskManagementApi.Application.DTOs.Auth;
 using TaskManagementApi.Application.Interfaces;
@@ -12,91 +13,185 @@ namespace TaskManagementApi.Infrastructure.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly UserManager<User> _userManager;
-        private readonly SignInManager<User> _signInManager;
-        private readonly IConfiguration _configuration;
+        private readonly IRepository<User> _userRepository;
+        private readonly IRepository<Role> _roleRepository;
+        private readonly IRepository<UserProjectRole> _userProjectRoleRepository;
+        private readonly JwtSettings _jwtSettings;
 
         public AuthService(
-            UserManager<User> userManager,
-            SignInManager<User> signInManager,
-            IConfiguration configuration)
+            IRepository<User> userRepository,
+            IRepository<Role> roleRepository,
+            IRepository<UserProjectRole> userProjectRoleRepository,
+            IOptions<JwtSettings> jwtSettings)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _configuration = configuration;
+            _userRepository = userRepository;
+            _roleRepository = roleRepository;
+            _userProjectRoleRepository = userProjectRoleRepository;
+            _jwtSettings = jwtSettings.Value;
         }
 
-        public async Task<TokenResponse> LoginAsync(string username, string password)
+        public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
         {
-            var user = await _userManager.FindByNameAsync(username) ?? await _userManager.FindByEmailAsync(username);
-            if (user == null) throw new UnauthorizedAccessException("Invalid credentials");
+            // Check if email already exists
+            var existing = await _userRepository.Query()
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (existing != null)
+                throw new InvalidOperationException(
+                    "An account with this email already exists");
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, password, false);
-            if (!result.Succeeded) throw new UnauthorizedAccessException("Invalid credentials");
+            // Hash password using BCrypt
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-            return GenerateTokenResponse(user);
-        }
-
-        public async Task<bool> RegisterAsync(RegisterRequest request)
-        {
             var user = new User
             {
-                UserName = request.Email,
                 Email = request.Email,
+                UserName = request.Email,
                 DisplayName = request.DisplayName,
+                PasswordHash = passwordHash,
                 IsActive = true,
-                Provider = "Local",
-                ProviderId = Guid.NewGuid().ToString(),
+                Provider = "local",
+                ProviderId = request.Email,
                 CreatedAt = DateTime.UtcNow
             };
+            await _userRepository.AddAsync(user);
 
-            var result = await _userManager.CreateAsync(user, request.Password);
-            return result.Succeeded;
+            return await GenerateAuthResponseAsync(user);
         }
 
-        public async Task<TokenResponse> RefreshAsync(string refreshToken)
+        public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
-            // Simple implementation for now
-            throw new NotImplementedException("Refresh token not implemented in this temporary local auth");
+            // Find user by email
+            var user = await _userRepository.Query()
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
+            if (user == null)
+                throw new UnauthorizedAccessException(
+                    "Invalid email or password");
+
+            // Check if account is active
+            if (!user.IsActive)
+                throw new UnauthorizedAccessException(
+                    "This account has been deactivated");
+
+            // Verify password
+            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+                throw new UnauthorizedAccessException(
+                    "Invalid email or password");
+
+            // Update last login
+            user.LastLoginAt = DateTime.UtcNow;
+            await _userRepository.UpdateAsync(user);
+
+            return await GenerateAuthResponseAsync(user);
+        }
+
+        public async Task<AuthResponse> RefreshAsync(string refreshToken)
+        {
+            var user = await _userRepository.Query()
+                .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+            if (user == null)
+                throw new UnauthorizedAccessException(
+                    "Invalid refresh token");
+            if (user.RefreshTokenExpiry < DateTime.UtcNow)
+                throw new UnauthorizedAccessException(
+                    "Refresh token has expired");
+
+            return await GenerateAuthResponseAsync(user);
         }
 
         public async Task LogoutAsync(string refreshToken)
         {
-            // No-op for simple JWT
-            await Task.CompletedTask;
+            var user = await _userRepository.Query()
+                .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+            if (user == null) return;
+
+            user.RefreshToken = null;
+            user.RefreshTokenExpiry = null;
+            await _userRepository.UpdateAsync(user);
         }
 
-        private TokenResponse GenerateTokenResponse(User user)
+        public async Task<UserDto> GetCurrentUserAsync(int userId)
         {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+                throw new KeyNotFoundException("User not found");
+
+            return await MapToUserDtoAsync(user);
+        }
+
+        private async Task<AuthResponse> GenerateAuthResponseAsync(User user)
+        {
+            // Generate access token
+            var accessToken = GenerateAccessToken(user);
+
+            // Generate refresh token
+            var refreshToken = GenerateRefreshToken();
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiry = DateTime.UtcNow
+                .AddDays(_jwtSettings.RefreshTokenExpiryDays);
+            await _userRepository.UpdateAsync(user);
+
+            return new AuthResponse
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                ExpiresIn = _jwtSettings.AccessTokenExpiryMinutes * 60,
+                User = await MapToUserDtoAsync(user)
+            };
+        }
+
+        private string GenerateAccessToken(User user)
+        {
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
+            var credentials = new SigningCredentials(
+                key, SecurityAlgorithms.HmacSha256);
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email ?? ""),
-                new Claim(ClaimTypes.Name, user.UserName ?? ""),
-                new Claim("sub", user.ProviderId) // Keep 'sub' for compatibility with PermissionAuthorizationHandler
+                new Claim(ClaimTypes.Name, user.DisplayName),
+                new Claim("sub", user.Id.ToString()),
+                new Claim("email", user.Email ?? ""),
+                new Claim("name", user.DisplayName),
             };
 
-            var jwtKey = _configuration["Jwt:Key"];
-            if (string.IsNullOrEmpty(jwtKey)) throw new Exception("JWT Key is missing in configuration");
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expires = DateTime.UtcNow.AddMinutes(double.Parse(_configuration["Jwt:DurationInMinutes"] ?? "60"));
-
             var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
+                issuer: _jwtSettings.Issuer,
+                audience: _jwtSettings.Audience,
                 claims: claims,
-                expires: expires,
-                signingCredentials: creds
+                expires: DateTime.UtcNow.AddMinutes(
+                    _jwtSettings.AccessTokenExpiryMinutes),
+                signingCredentials: credentials
             );
 
-            return new TokenResponse
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        private string GenerateRefreshToken()
+        {
+            var bytes = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(bytes);
+            return Convert.ToBase64String(bytes);
+        }
+
+        private async Task<UserDto> MapToUserDtoAsync(User user)
+        {
+            // Get user roles across all projects efficiently
+            var roles = await _userProjectRoleRepository.Query()
+                .Where(upr => upr.UserId == user.Id)
+                .Select(upr => upr.Role.Name!)
+                .Distinct()
+                .ToListAsync();
+
+            return new UserDto
             {
-                AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
-                RefreshToken = Guid.NewGuid().ToString(), // Dummy refresh token
-                ExpiresIn = (int)(expires - DateTime.UtcNow).TotalSeconds,
-                TokenType = "Bearer"
+                Id = user.Id,
+                Email = user.Email ?? "",
+                DisplayName = user.DisplayName,
+                AvatarUrl = user.AvatarUrl,
+                Roles = roles
             };
         }
     }

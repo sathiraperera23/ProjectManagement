@@ -18,68 +18,82 @@ namespace TaskManagementApi.Web.Controllers
 
         [HttpPost("register")]
         [AllowAnonymous]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> Register(
+            [FromBody] RegisterRequest request)
         {
             var validator = new RegisterRequestValidator();
-            var result = await validator.ValidateAsync(request);
+            var result = validator.Validate(request);
             if (!result.IsValid)
                 return BadRequest(result.Errors.Select(e => e.ErrorMessage));
 
-            var success = await _authService.RegisterAsync(request);
-            if (success)
-                return Ok(new { Message = "User registered successfully" });
-
-            return BadRequest("User registration failed");
+            try
+            {
+                var response = await _authService.RegisterAsync(request);
+                return Ok(response);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
         }
 
         [HttpPost("login")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login(
+            [FromBody] LoginRequest request)
         {
             var validator = new LoginRequestValidator();
-            var result = await validator.ValidateAsync(request);
+            var result = validator.Validate(request);
             if (!result.IsValid)
                 return BadRequest(result.Errors.Select(e => e.ErrorMessage));
+
             try
             {
-                var tokens = await _authService.LoginAsync(request.Username, request.Password);
-                return Ok(tokens);
+                var response = await _authService.LoginAsync(request);
+                return Ok(response);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Unauthorized("Invalid username or password");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
+                return Unauthorized(ex.Message);
             }
         }
 
         [HttpPost("refresh")]
         [AllowAnonymous]
-        public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
+        public async Task<IActionResult> Refresh(
+            [FromBody] RefreshTokenRequest request)
         {
             try
             {
-                var tokens = await _authService.RefreshAsync(request.RefreshToken);
-                return Ok(tokens);
+                var response = await _authService
+                    .RefreshAsync(request.RefreshToken);
+                return Ok(response);
             }
-            catch (NotImplementedException)
+            catch (UnauthorizedAccessException ex)
             {
-                return StatusCode(501, "Refresh token functionality is not implemented yet");
-            }
-            catch (Exception)
-            {
-                return Unauthorized("Invalid or expired refresh token");
+                return Unauthorized(ex.Message);
             }
         }
 
         [HttpPost("logout")]
         [Authorize]
-        public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
+        public async Task<IActionResult> Logout(
+            [FromBody] RefreshTokenRequest request)
         {
             await _authService.LogoutAsync(request.RefreshToken);
             return NoContent();
+        }
+
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userIdClaim = User.FindFirst("sub")?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var user = await _authService.GetCurrentUserAsync(userId);
+            return Ok(user);
         }
     }
 }
