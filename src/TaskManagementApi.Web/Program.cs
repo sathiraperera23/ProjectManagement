@@ -17,10 +17,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
-using System.IdentityModel.Tokens.Jwt;
-
-// Disable default claim mapping to keep original JWT claims like 'sub' and 'role'
-JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,11 +50,7 @@ var keycloakUrl = builder.Configuration["Keycloak:AuthServerUrl"];
 var realm = builder.Configuration["Keycloak:Realm"];
 var clientId = builder.Configuration["Keycloak:ClientId"];
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.Authority = $"{keycloakUrl}/realms/{realm}";

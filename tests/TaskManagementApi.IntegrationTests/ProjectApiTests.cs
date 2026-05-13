@@ -52,21 +52,8 @@ namespace TaskManagementApi.IntegrationTests
             {
                 builder.ConfigureTestServices(services =>
                 {
-                    // Remove the real authorization handler to avoid context.Fail()
-                    var descriptor = services.SingleOrDefault(
-                        d => d.ServiceType == typeof(IAuthorizationHandler) &&
-                             d.ImplementationType == typeof(TaskManagementApi.Web.Authorization.PermissionAuthorizationHandler));
-                    if (descriptor != null)
-                    {
-                        services.Remove(descriptor);
-                    }
-
-                    services.AddAuthentication(options =>
-                    {
-                        options.DefaultAuthenticateScheme = "Test";
-                        options.DefaultChallengeScheme = "Test";
-                    })
-                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
+                    services.AddAuthentication("Test")
+                        .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", options => { });
 
                     // Grant all permissions for testing
                     services.AddSingleton<IAuthorizationHandler, AllowAnonymousHandler>();
