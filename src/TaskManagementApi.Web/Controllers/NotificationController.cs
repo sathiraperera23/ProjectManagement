@@ -14,16 +14,20 @@ namespace TaskManagementApi.Web.Controllers
     public class NotificationController : ControllerBase
     {
         private readonly INotificationService _notificationService;
+        private readonly IUserManagerFacade _userManager;
 
-        public NotificationController(INotificationService notificationService)
+        public NotificationController(INotificationService notificationService, IUserManagerFacade userManager)
         {
             _notificationService = notificationService;
+            _userManager = userManager;
         }
 
-        private Task<int> GetCurrentUserId()
+        private async Task<int> GetCurrentUserId()
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
+            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (providerId == null) return 0;
+            var user = await _userManager.FindByProviderIdAsync(providerId);
+            return user?.Id ?? 0;
         }
 
         [HttpGet]

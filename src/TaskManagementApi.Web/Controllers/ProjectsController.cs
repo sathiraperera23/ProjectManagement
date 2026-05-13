@@ -15,19 +15,23 @@ namespace TaskManagementApi.Web.Controllers
     {
         private readonly IProjectService _projectService;
         private readonly IAccessControlService _accessService;
+        private readonly IUserManagerFacade _userManager;
         private readonly ILogger<ProjectsController> _logger;
 
-        public ProjectsController(IProjectService projectService, IAccessControlService accessService, ILogger<ProjectsController> logger)
+        public ProjectsController(IProjectService projectService, IAccessControlService accessService, IUserManagerFacade userManager, ILogger<ProjectsController> logger)
         {
             _projectService = projectService;
             _accessService = accessService;
+            _userManager = userManager;
             _logger = logger;
         }
 
-        private Task<int> GetCurrentUserId()
+        private async Task<int> GetCurrentUserId()
         {
-            var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
+            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (providerId == null) return 0;
+            var user = await _userManager.FindByProviderIdAsync(providerId);
+            return user?.Id ?? 0;
         }
 
         [HttpPost]

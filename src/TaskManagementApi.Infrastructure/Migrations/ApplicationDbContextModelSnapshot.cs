@@ -523,21 +523,6 @@ namespace TaskManagementApi.Infrastructure.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.HasKey("CommentId", "UserId");
 
                     b.HasIndex("UserId");
@@ -1916,6 +1901,9 @@ namespace TaskManagementApi.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("UploadedByUserId")
                         .HasColumnType("integer");
 
@@ -2155,18 +2143,6 @@ namespace TaskManagementApi.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Id")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.HasKey("TicketId", "UserId");
 
                     b.HasIndex("UserId");
@@ -2322,12 +2298,6 @@ namespace TaskManagementApi.Infrastructure.Migrations
 
                     b.Property<TimeSpan?>("QuietHourStart")
                         .HasColumnType("interval");
-
-                    b.Property<string>("RefreshToken")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("RefreshTokenExpiry")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text");

@@ -15,16 +15,20 @@ namespace TaskManagementApi.Web.Controllers
     public class TicketExtraController : ControllerBase
     {
         private readonly ITicketExtraService _extraService;
+        private readonly IUserManagerFacade _userManager;
 
-        public TicketExtraController(ITicketExtraService extraService)
+        public TicketExtraController(ITicketExtraService extraService, IUserManagerFacade userManager)
         {
             _extraService = extraService;
+            _userManager = userManager;
         }
 
-        private Task<int> GetCurrentUserId()
+        private async Task<int> GetCurrentUserId()
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
+            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (providerId == null) return 0;
+            var user = await _userManager.FindByProviderIdAsync(providerId);
+            return user?.Id ?? 0;
         }
 
         // ── Comments ──────────────────────────────────────────

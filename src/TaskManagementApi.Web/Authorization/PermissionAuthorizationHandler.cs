@@ -27,36 +27,39 @@ namespace TaskManagementApi.Web.Authorization
             AuthorizationHandlerContext context,
             PermissionRequirement requirement)
         {
-            int userId = 0;
-            var userIdClaim = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            // Extract SSO ProviderId (Keycloak 'sub') from JWT claims
+            // With JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear(), 'sub' is preserved.
+            var providerId = context.User.FindFirst("sub")?.Value
+                          ?? context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                          ?? context.User.FindFirst("oid")?.Value; // fallback for some azure/other providers
 
-            if (userIdClaim != null && int.TryParse(userIdClaim, out userId))
+            if (string.IsNullOrEmpty(providerId))
             {
-                // Found userId in claims
+                context.Fail();
+                return;
             }
-            else
+
+            // Look up local user by ProviderId
+            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.ProviderId == providerId);
+            if (user == null)
             {
-                // Fallback to ProviderId (for backward compatibility or SSO)
-                var providerId = context.User.FindFirst("sub")?.Value;
-                if (providerId == null)
+                // If not found by ProviderId, try finding by Email as a fallback (if present in claims)
+                var email = context.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                         ?? context.User.FindFirst("email")?.Value;
+
+                if (!string.IsNullOrEmpty(email))
                 {
-                    providerId = context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                    user = await _userManager.FindByEmailAsync(email);
                 }
 
-                if (providerId == null)
-                {
-                    context.Fail();
-                    return;
-                }
-
-                var user = await _userManager.Users.FirstOrDefaultAsync(u => u.ProviderId == providerId);
                 if (user == null)
                 {
                     context.Fail();
                     return;
                 }
-                userId = user.Id;
             }
+
+            var userId = user.Id;
 
             // Extract projectId from route values
             var httpContext = _httpContextAccessor.HttpContext;

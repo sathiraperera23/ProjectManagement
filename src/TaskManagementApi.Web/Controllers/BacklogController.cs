@@ -17,17 +17,21 @@ namespace TaskManagementApi.Web.Controllers
     {
         private readonly IBacklogService _backlogService;
         private readonly IAccessControlService _accessService;
+        private readonly IUserManagerFacade _userManager;
 
-        public BacklogController(IBacklogService backlogService, IAccessControlService accessService)
+        public BacklogController(IBacklogService backlogService, IAccessControlService accessService, IUserManagerFacade userManager)
         {
             _backlogService = backlogService;
             _accessService = accessService;
+            _userManager = userManager;
         }
 
-        private Task<int> GetCurrentUserId()
+        private async Task<int> GetCurrentUserId()
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
+            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (providerId == null) return 0;
+            var user = await _userManager.FindByProviderIdAsync(providerId);
+            return user?.Id ?? 0;
         }
 
         // ── Project-level backlog ──────────────────────────────

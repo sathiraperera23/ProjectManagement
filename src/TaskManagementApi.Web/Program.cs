@@ -5,10 +5,10 @@ using TaskManagementApi.Application.Interfaces;
 using TaskManagementApi.Application.Services;
 using TaskManagementApi.Infrastructure.Repositories;
 using TaskManagementApi.Infrastructure.Services;
+using TaskManagementApi.Infrastructure.Auth;
 using TaskManagementApi.Infrastructure;
 using TaskManagementApi.Web.Authorization;
 using TaskManagementApi.Web.Hubs;
-using TaskManagementApi.Application.DTOs.Auth;
 using Microsoft.AspNetCore.Identity;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -17,7 +17,10 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
-using System.Text;
+using System.IdentityModel.Tokens.Jwt;
+
+// Disable default claim mapping to keep original JWT claims like 'sub' and 'role'
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,35 +49,37 @@ builder.Services.AddIdentity<User, Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// JWT Settings
-builder.Services.Configure<JwtSettings>(
-    builder.Configuration.GetSection("JwtSettings"));
+// 2. Keycloak JWT Bearer validation
+var keycloakUrl = builder.Configuration["Keycloak:AuthServerUrl"];
+var realm = builder.Configuration["Keycloak:Realm"];
+var clientId = builder.Configuration["Keycloak:ClientId"];
 
-// JWT Authentication
-var jwtSettings = builder.Configuration
-    .GetSection("JwtSettings").Get<JwtSettings>();
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
     .AddJwtBearer(options =>
     {
+        options.Authority = $"{keycloakUrl}/realms/{realm}";
+        options.Audience = clientId;
+        options.RequireHttpsMetadata = false; // set true in production
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings?.Issuer,
-            ValidAudience = jwtSettings?.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSettings?.SecretKey ?? "default_secret_key_at_least_32_chars")),
-            ClockSkew = TimeSpan.Zero
+            ValidateIssuerSigningKey = true
         };
     });
 
 builder.Services.AddAuthorization();
 
-// Register AuthService
-builder.Services.AddScoped<IAuthService, AuthService>();
+// 3. Keycloak role converter
+builder.Services.AddSingleton<IClaimsTransformation, KeycloakJwtRoleConverter>();
+
+// 4. Register KeycloakAuthService with HttpClient
+builder.Services.AddHttpClient<IKeycloakAuthService, KeycloakAuthService>();
 
 // Services
 builder.Services.AddScoped<IRoleService, RoleService>();
@@ -93,6 +98,7 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ISubProjectService, SubProjectService>();
 builder.Services.AddScoped<ISprintService, SprintService>();
+builder.Services.AddScoped<IUserManagerFacade, UserManagerFacade>();
 builder.Services.AddScoped<ITicketExtraService, TicketExtraService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<INotificationHubService, NotificationHubService>();

@@ -13,7 +13,7 @@ namespace TaskManagementApi.Domain.Entities
         public string? AvatarUrl { get; set; }
         public string Provider { get; set; } = null!;      // "google" or "microsoft"
         public string ProviderId { get; set; } = null!;    // Keycloak subject ID
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; }
         public DateTime? DeactivatedAt { get; set; }
         public int? DeactivatedByUserId { get; set; }
 
@@ -30,9 +30,6 @@ namespace TaskManagementApi.Domain.Entities
 
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLoginAt { get; set; }
-
-        public string? RefreshToken { get; set; }
-        public DateTime? RefreshTokenExpiry { get; set; }
 
         public ICollection<UserProjectRole> UserProjectRoles { get; set; } = new List<UserProjectRole>();
     }

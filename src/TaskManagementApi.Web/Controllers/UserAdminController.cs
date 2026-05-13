@@ -14,16 +14,20 @@ namespace TaskManagementApi.Web.Controllers
     public class UserAdminController : ControllerBase
     {
         private readonly IUserAdminService _adminService;
+        private readonly IUserManagerFacade _userManager;
 
-        public UserAdminController(IUserAdminService adminService)
+        public UserAdminController(IUserAdminService adminService, IUserManagerFacade userManager)
         {
             _adminService = adminService;
+            _userManager = userManager;
         }
 
-        private Task<int> GetCurrentUserId()
+        private async Task<int> GetCurrentUserId()
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
+            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (providerId == null) return 0;
+            var user = await _userManager.FindByProviderIdAsync(providerId);
+            return user?.Id ?? 0;
         }
 
         [HttpPost("invite")]
