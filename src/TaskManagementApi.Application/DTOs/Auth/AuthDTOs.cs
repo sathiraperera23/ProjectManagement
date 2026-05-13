@@ -2,28 +2,69 @@ using FluentValidation;
 
 namespace TaskManagementApi.Application.DTOs.Auth
 {
+    public class RegisterRequest
+    {
+        public string Email { get; set; } = null!;
+        public string Password { get; set; } = null!;
+        public string DisplayName { get; set; } = null!;
+    }
+
     public class LoginRequest
     {
-        public string Username { get; set; } = null!;
+        public string Email { get; set; } = null!;
         public string Password { get; set; } = null!;
     }
 
-    public class RefreshRequest
+    public class AuthResponse
+    {
+        public string AccessToken { get; set; } = null!;
+        public string RefreshToken { get; set; } = null!;
+        public int ExpiresIn { get; set; }
+        public string TokenType { get; set; } = "Bearer";
+        public UserDto User { get; set; } = null!;
+    }
+
+    public class UserDto
+    {
+        public int Id { get; set; }
+        public string Email { get; set; } = null!;
+        public string DisplayName { get; set; } = null!;
+        public string? AvatarUrl { get; set; }
+        public List<string> Roles { get; set; } = new();
+    }
+
+    public class RefreshTokenRequest
     {
         public string RefreshToken { get; set; } = null!;
     }
 
-    public class LogoutRequest
+    public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
     {
-        public string RefreshToken { get; set; } = null!;
+        public RegisterRequestValidator()
+        {
+            RuleFor(x => x.Email)
+                .NotEmpty().WithMessage("Email is required")
+                .EmailAddress().WithMessage("Invalid email format");
+            RuleFor(x => x.Password)
+                .NotEmpty().WithMessage("Password is required")
+                .MinimumLength(8).WithMessage("Password must be at least 8 characters")
+                .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter")
+                .Matches("[0-9]").WithMessage("Password must contain at least one number");
+            RuleFor(x => x.DisplayName)
+                .NotEmpty().WithMessage("Display name is required")
+                .MaximumLength(100);
+        }
     }
 
     public class LoginRequestValidator : AbstractValidator<LoginRequest>
     {
         public LoginRequestValidator()
         {
-            RuleFor(x => x.Username).NotEmpty().WithMessage("Username is required");
-            RuleFor(x => x.Password).NotEmpty().WithMessage("Password is required");
+            RuleFor(x => x.Email)
+                .NotEmpty().WithMessage("Email is required")
+                .EmailAddress().WithMessage("Invalid email format");
+            RuleFor(x => x.Password)
+                .NotEmpty().WithMessage("Password is required");
         }
     }
 }

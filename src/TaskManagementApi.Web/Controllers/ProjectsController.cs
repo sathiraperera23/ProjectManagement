@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using TaskManagementApi.Web.Authorization;
 using TaskManagementApi.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace TaskManagementApi.Web.Controllers
 {
@@ -15,23 +16,19 @@ namespace TaskManagementApi.Web.Controllers
     {
         private readonly IProjectService _projectService;
         private readonly IAccessControlService _accessService;
-        private readonly IUserManagerFacade _userManager;
         private readonly ILogger<ProjectsController> _logger;
 
-        public ProjectsController(IProjectService projectService, IAccessControlService accessService, IUserManagerFacade userManager, ILogger<ProjectsController> logger)
+        public ProjectsController(IProjectService projectService, IAccessControlService accessService, ILogger<ProjectsController> logger)
         {
             _projectService = projectService;
             _accessService = accessService;
-            _userManager = userManager;
             _logger = logger;
         }
 
-        private async Task<int> GetCurrentUserId()
+        private Task<int> GetCurrentUserId()
         {
-            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (providerId == null) return 0;
-            var user = await _userManager.FindByProviderIdAsync(providerId);
-            return user?.Id ?? 0;
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
         }
 
         [HttpPost]
