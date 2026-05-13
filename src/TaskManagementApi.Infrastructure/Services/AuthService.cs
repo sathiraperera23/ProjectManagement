@@ -120,8 +120,15 @@ namespace TaskManagementApi.Infrastructure.Services
 
         private async Task<AuthResponse> GenerateAuthResponseAsync(User user)
         {
-            // Generate access token
-            var accessToken = GenerateAccessToken(user);
+            // Get user roles efficiently
+            var roles = await _userProjectRoleRepository.Query()
+                .Where(upr => upr.UserId == user.Id)
+                .Select(upr => upr.Role.Name!)
+                .Distinct()
+                .ToListAsync();
+
+            // Generate access token with roles
+            var accessToken = GenerateAccessToken(user, roles);
 
             // Generate refresh token
             var refreshToken = GenerateRefreshToken();
@@ -135,11 +142,18 @@ namespace TaskManagementApi.Infrastructure.Services
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
                 ExpiresIn = _jwtSettings.AccessTokenExpiryMinutes * 60,
-                User = await MapToUserDtoAsync(user)
+                User = new UserDto
+                {
+                    Id = user.Id,
+                    Email = user.Email ?? "",
+                    DisplayName = user.DisplayName,
+                    AvatarUrl = user.AvatarUrl,
+                    Roles = roles
+                }
             };
         }
 
-        private string GenerateAccessToken(User user)
+        private string GenerateAccessToken(User user, IEnumerable<string> roles)
         {
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
@@ -155,6 +169,11 @@ namespace TaskManagementApi.Infrastructure.Services
                 new Claim("email", user.Email ?? ""),
                 new Claim("name", user.DisplayName),
             };
+
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             var token = new JwtSecurityToken(
                 issuer: _jwtSettings.Issuer,

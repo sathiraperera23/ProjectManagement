@@ -48,10 +48,12 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpGet]
-        [RequirePermission(Permissions.ViewAllProjects)]
         public async Task<ActionResult<IEnumerable<ProjectResponse>>> GetProjects()
         {
-            var projects = await _projectService.GetAllProjectsAsync();
+            var userId = await GetCurrentUserId();
+            var isAdminOrPm = User.IsInRole("Administrator") || User.IsInRole("Project Manager");
+
+            var projects = await _projectService.GetAllProjectsAsync(isAdminOrPm ? null : userId);
             return Ok(projects);
         }
 

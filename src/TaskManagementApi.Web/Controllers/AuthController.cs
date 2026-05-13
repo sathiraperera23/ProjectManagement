@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskManagementApi.Application.DTOs.Auth;
@@ -90,7 +91,7 @@ namespace TaskManagementApi.Web.Controllers
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()
         {
-            var userIdClaim = User.FindFirst("sub")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
             if (!int.TryParse(userIdClaim, out var userId))
                 return Unauthorized();
 

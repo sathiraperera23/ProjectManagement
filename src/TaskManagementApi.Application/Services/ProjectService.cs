@@ -10,12 +10,18 @@ namespace TaskManagementApi.Application.Services
         private readonly IRepository<Project> _projectRepository;
         private readonly IRepository<TicketStatus> _statusRepository;
         private readonly IUserAdminService _userAdminService;
+        private readonly IRepository<Team> _teamRepository;
 
-        public ProjectService(IRepository<Project> projectRepository, IRepository<TicketStatus> statusRepository, IUserAdminService userAdminService)
+        public ProjectService(
+            IRepository<Project> projectRepository,
+            IRepository<TicketStatus> statusRepository,
+            IUserAdminService userAdminService,
+            IRepository<Team> teamRepository)
         {
             _projectRepository = projectRepository;
             _statusRepository = statusRepository;
             _userAdminService = userAdminService;
+            _teamRepository = teamRepository;
         }
 
         public async Task<ProjectResponse> CreateProjectAsync(CreateProjectRequest request)
@@ -72,9 +78,22 @@ namespace TaskManagementApi.Application.Services
             }
         }
 
-        public async Task<IEnumerable<ProjectResponse>> GetAllProjectsAsync()
+        public async Task<IEnumerable<ProjectResponse>> GetAllProjectsAsync(int? userId = null)
         {
-            var projects = await _projectRepository.GetAllAsync();
+            IQueryable<Project> query = _projectRepository.Query();
+
+            if (userId.HasValue)
+            {
+                var assignedProjectIds = await _teamRepository.Query()
+                    .Where(t => t.Members.Any(m => m.UserId == userId.Value))
+                    .Select(t => t.ProjectId)
+                    .Distinct()
+                    .ToListAsync();
+
+                query = query.Where(p => assignedProjectIds.Contains(p.Id));
+            }
+
+            var projects = await query.ToListAsync();
             return projects.Select(MapToResponse);
         }
 
