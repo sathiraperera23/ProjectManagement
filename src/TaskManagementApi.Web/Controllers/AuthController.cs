@@ -7,6 +7,8 @@ namespace TaskManagementApi.Web.Controllers
 {
     [ApiController]
     [Route("api/auth")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
