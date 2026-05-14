@@ -144,6 +144,13 @@ namespace TaskManagementApi.Application.Services
             await Task.CompletedTask;
         }
 
+        public async Task<bool> IsUserAssignedToProjectAsync(int userId, int projectId)
+        {
+            return await _teamRepository.Query()
+                .Where(t => t.ProjectId == projectId)
+                .AnyAsync(t => t.Members.Any(m => m.UserId == userId));
+        }
+
         private ProjectResponse MapToResponse(Project project)
         {
             return new ProjectResponse

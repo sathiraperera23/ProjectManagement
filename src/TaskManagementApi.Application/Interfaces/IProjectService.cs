@@ -11,5 +11,6 @@ namespace TaskManagementApi.Application.Interfaces
         Task ArchiveProjectAsync(int id);
         Task SoftDeleteProjectAsync(int id);
         Task AssignTeamOrUserAsync(int id, int? teamId, int? userId);
+        Task<bool> IsUserAssignedToProjectAsync(int userId, int projectId);
     }
 }

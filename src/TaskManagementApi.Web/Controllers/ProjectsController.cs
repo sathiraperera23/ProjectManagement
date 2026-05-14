@@ -63,8 +63,12 @@ namespace TaskManagementApi.Web.Controllers
             var isAdminOrPm = User.IsInRole("Administrator") || User.IsInRole("Project Manager");
             if (!isAdminOrPm)
             {
-                var access = await _accessService.GetAccessLevelAsync(await GetCurrentUserId(), Domain.Entities.AccessComponentType.Project, id);
-                if (access == Domain.Entities.AccessLevel.NoAccess) return Forbid();
+                var userId = await GetCurrentUserId();
+                var isAssigned = await _projectService.IsUserAssignedToProjectAsync(userId, id);
+                if (!isAssigned)
+                {
+                    return StatusCode(403, "You do not have access to this project");
+                }
             }
 
             var project = await _projectService.GetProjectByIdAsync(id);
