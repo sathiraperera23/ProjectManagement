@@ -19,8 +19,9 @@ namespace TaskManagementApi.Tests
             var mockRepo = new Mock<IRepository<Project>>();
             var mockStatusRepo = new Mock<IRepository<TicketStatus>>();
             var mockUserAdmin = new Mock<IUserAdminService>();
+            var mockTeamRepo = new Mock<IRepository<Team>>();
             mockRepo.Setup(r => r.AddAsync(It.IsAny<Project>())).Returns(Task.CompletedTask);
-            var service = new ProjectService(mockRepo.Object, mockStatusRepo.Object, mockUserAdmin.Object);
+            var service = new ProjectService(mockRepo.Object, mockStatusRepo.Object, mockUserAdmin.Object, mockTeamRepo.Object);
             var request = new CreateProjectRequest
             {
                 Name = projectName,
@@ -42,10 +43,11 @@ namespace TaskManagementApi.Tests
             var mockRepo = new Mock<IRepository<Project>>();
             var mockStatusRepo = new Mock<IRepository<TicketStatus>>();
             var mockUserAdmin = new Mock<IUserAdminService>();
+            var mockTeamRepo = new Mock<IRepository<Team>>();
             var project = new Project { Id = 1, IsArchived = false };
             mockRepo.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(project);
             mockRepo.Setup(r => r.UpdateAsync(It.IsAny<Project>())).Returns(Task.CompletedTask);
-            var service = new ProjectService(mockRepo.Object, mockStatusRepo.Object, mockUserAdmin.Object);
+            var service = new ProjectService(mockRepo.Object, mockStatusRepo.Object, mockUserAdmin.Object, mockTeamRepo.Object);
 
             // Act
             await service.ArchiveProjectAsync(1);

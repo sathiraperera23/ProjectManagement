@@ -16,20 +16,16 @@ namespace TaskManagementApi.Web.Controllers
     public class SprintController : ControllerBase
     {
         private readonly ISprintService _sprintService;
-        private readonly IUserManagerFacade _userManager;
 
-        public SprintController(ISprintService sprintService, IUserManagerFacade userManager)
+        public SprintController(ISprintService sprintService)
         {
             _sprintService = sprintService;
-            _userManager = userManager;
         }
 
-        private async Task<int> GetCurrentUserId()
+        private Task<int> GetCurrentUserId()
         {
-            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (providerId == null) return 0;
-            var user = await _userManager.FindByProviderIdAsync(providerId);
-            return user?.Id ?? 0;
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
         }
 
         [HttpPost]
@@ -116,6 +112,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpDelete("{id}/tickets/{ticketId}")]
+        [RequirePermission(Permissions.MoveTicketsToSprint)]
         public async Task<IActionResult> RemoveTicket(int projectId, int id, int ticketId, [FromQuery] string? reason)
         {
             await _sprintService.RemoveTicketFromSprintAsync(id, ticketId, reason, await GetCurrentUserId());
