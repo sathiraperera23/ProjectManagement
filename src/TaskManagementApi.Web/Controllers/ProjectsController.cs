@@ -32,7 +32,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator,Project Manager")]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<ActionResult<ProjectResponse>> CreateProject(CreateProjectRequest request)
         {
             try
@@ -50,8 +50,9 @@ namespace TaskManagementApi.Web.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProjectResponse>>> GetProjects()
         {
-            var userId = await GetCurrentUserId();
-            var isAdminOrPm = User.IsInRole("Administrator") || User.IsInRole("Project Manager");
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = int.Parse(userIdStr!);
+            var isAdminOrPm = User.IsInRole("Admin") || User.IsInRole("ProjectManager");
 
             var projects = await _projectService.GetAllProjectsAsync(isAdminOrPm ? null : userId);
             return Ok(projects);
@@ -60,10 +61,11 @@ namespace TaskManagementApi.Web.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ProjectResponse>> GetProject(int id)
         {
-            var isAdminOrPm = User.IsInRole("Administrator") || User.IsInRole("Project Manager");
+            var isAdminOrPm = User.IsInRole("Admin") || User.IsInRole("ProjectManager");
             if (!isAdminOrPm)
             {
-                var userId = await GetCurrentUserId();
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = int.Parse(userIdStr!);
                 var isAssigned = await _projectService.IsUserAssignedToProjectAsync(userId, id);
                 if (!isAssigned)
                 {
@@ -77,7 +79,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Administrator,Project Manager")]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> UpdateProject(int id, UpdateProjectRequest request)
         {
             await _projectService.UpdateProjectAsync(id, request);
@@ -85,7 +87,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPut("{id}/archive")]
-        [Authorize(Roles = "Administrator,Project Manager")]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> ArchiveProject(int id)
         {
             await _projectService.ArchiveProjectAsync(id);
@@ -93,7 +95,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Administrator")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProject(int id)
         {
             await _projectService.SoftDeleteProjectAsync(id);
@@ -101,7 +103,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPost("{id}/teams")]
-        [Authorize(Roles = "Administrator,Project Manager")]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> AssignTeamOrUser(int id, [FromQuery] int? teamId, [FromQuery] int? userId)
         {
             await _projectService.AssignTeamOrUserAsync(id, teamId, userId);
