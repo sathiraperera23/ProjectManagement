@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Moq;
 using TaskManagementApi.Application.DTOs.Auth;
@@ -16,6 +17,7 @@ namespace TaskManagementApi.Tests
         private readonly Mock<IRepository<User>> _userRepoMock;
         private readonly Mock<IRepository<Role>> _roleRepoMock;
         private readonly Mock<IRepository<UserProjectRole>> _uprRepoMock;
+        private readonly Mock<UserManager<User>> _userManagerMock;
         private readonly IOptions<JwtSettings> _jwtSettings;
         private readonly AuthService _authService;
 
@@ -24,6 +26,9 @@ namespace TaskManagementApi.Tests
             _userRepoMock = new Mock<IRepository<User>>();
             _roleRepoMock = new Mock<IRepository<Role>>();
             _uprRepoMock = new Mock<IRepository<UserProjectRole>>();
+
+            var userStoreMock = new Mock<IUserStore<User>>();
+            _userManagerMock = new Mock<UserManager<User>>(userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
 
             _jwtSettings = Options.Create(new JwtSettings
             {
@@ -38,6 +43,7 @@ namespace TaskManagementApi.Tests
                 _userRepoMock.Object,
                 _roleRepoMock.Object,
                 _uprRepoMock.Object,
+                _userManagerMock.Object,
                 _jwtSettings);
         }
 
@@ -59,6 +65,8 @@ namespace TaskManagementApi.Tests
 
             _userRepoMock.SetupAsyncQueryable(new List<User>().AsQueryable());
             _uprRepoMock.SetupAsyncQueryable(new List<UserProjectRole>().AsQueryable());
+            _userManagerMock.Setup(m => m.GetRolesAsync(It.IsAny<User>()))
+                .ReturnsAsync(new List<string>());
 
             // Act
             var result = await _authService.RegisterAsync(request);
@@ -93,6 +101,8 @@ namespace TaskManagementApi.Tests
 
             _userRepoMock.SetupAsyncQueryable(new List<User> { user }.AsQueryable());
             _uprRepoMock.SetupAsyncQueryable(new List<UserProjectRole>().AsQueryable());
+            _userManagerMock.Setup(m => m.GetRolesAsync(It.IsAny<User>()))
+                .ReturnsAsync(new List<string>());
 
             var request = new LoginRequest { Email = "test@example.com", Password = password };
 
@@ -137,6 +147,8 @@ namespace TaskManagementApi.Tests
             var user = new User { Id = 1, Email = "test@example.com", RefreshToken = token, RefreshTokenExpiry = DateTime.UtcNow.AddDays(1), IsActive = true, DisplayName = "Test" };
             _userRepoMock.SetupAsyncQueryable(new List<User> { user }.AsQueryable());
             _uprRepoMock.SetupAsyncQueryable(new List<UserProjectRole>().AsQueryable());
+            _userManagerMock.Setup(m => m.GetRolesAsync(It.IsAny<User>()))
+                .ReturnsAsync(new List<string>());
 
             // Act
             var result = await _authService.RefreshAsync(token);

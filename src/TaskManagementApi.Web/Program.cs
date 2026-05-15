@@ -153,9 +153,41 @@ var app = builder.Build();
 // Data seeding
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var services = scope.ServiceProvider;
+    var db = services.GetRequiredService<ApplicationDbContext>();
     // await db.Database.MigrateAsync();
     await RoleSeeder.SeedAsync(db);
+
+    if (app.Environment.IsDevelopment() && !db.Users.Any(u => u.Email == "admin@admin.com"))
+    {
+        var role = new Role
+        {
+            Name = "Admin",
+            Description = "Seeded Admin Role",
+            IsSystem = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Roles.Add(role);
+
+        var adminEmail = "admin@admin.com";
+        var adminUser = new User
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            DisplayName = "System Admin",
+            EmailConfirmed = true,
+            IsActive = true,
+            Provider = "local",
+            ProviderId = adminEmail,
+            CreatedAt = DateTime.UtcNow,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123")
+        };
+        db.Users.Add(adminUser);
+        await db.SaveChangesAsync();
+
+        db.UserRoles.Add(new IdentityUserRole<int> { UserId = adminUser.Id, RoleId = role.Id });
+        await db.SaveChangesAsync();
+    }
 }
 
 // Configure the HTTP request pipeline.

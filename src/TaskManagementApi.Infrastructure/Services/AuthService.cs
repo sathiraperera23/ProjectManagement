@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -16,17 +17,20 @@ namespace TaskManagementApi.Infrastructure.Services
         private readonly IRepository<User> _userRepository;
         private readonly IRepository<Role> _roleRepository;
         private readonly IRepository<UserProjectRole> _userProjectRoleRepository;
+        private readonly UserManager<User> _userManager;
         private readonly JwtSettings _jwtSettings;
 
         public AuthService(
             IRepository<User> userRepository,
             IRepository<Role> roleRepository,
             IRepository<UserProjectRole> userProjectRoleRepository,
+            UserManager<User> userManager,
             IOptions<JwtSettings> jwtSettings)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _userProjectRoleRepository = userProjectRoleRepository;
+            _userManager = userManager;
             _jwtSettings = jwtSettings.Value;
         }
 
@@ -87,6 +91,8 @@ namespace TaskManagementApi.Infrastructure.Services
         public async Task<AuthResponse> RefreshAsync(string refreshToken)
         {
             var user = await _userRepository.Query()
+                .Include(u => u.UserProjectRoles)
+                .ThenInclude(upr => upr.Role)
                 .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
             if (user == null)
                 throw new UnauthorizedAccessException(
@@ -120,12 +126,22 @@ namespace TaskManagementApi.Infrastructure.Services
 
         private async Task<AuthResponse> GenerateAuthResponseAsync(User user)
         {
-            // Get user roles efficiently
-            var roles = await _userProjectRoleRepository.Query()
+            // Get user roles from projects
+            var projectRoles = await _userProjectRoleRepository.Query()
                 .Where(upr => upr.UserId == user.Id)
                 .Select(upr => upr.Role.Name!)
-                .Distinct()
                 .ToListAsync();
+
+            // Get global identity roles
+            var identityRoles = await _userManager.GetRolesAsync(user);
+
+            var roles = projectRoles.Concat(identityRoles).Distinct().ToList();
+
+            return await GenerateAuthResponseInternalAsync(user, roles);
+        }
+
+        private async Task<AuthResponse> GenerateAuthResponseInternalAsync(User user, List<string> roles)
+        {
 
             // Generate access token with roles
             var accessToken = GenerateAccessToken(user, roles);
@@ -197,12 +213,16 @@ namespace TaskManagementApi.Infrastructure.Services
 
         private async Task<UserDto> MapToUserDtoAsync(User user)
         {
-            // Get user roles across all projects efficiently
-            var roles = await _userProjectRoleRepository.Query()
+            // Get user roles from projects
+            var projectRoles = await _userProjectRoleRepository.Query()
                 .Where(upr => upr.UserId == user.Id)
                 .Select(upr => upr.Role.Name!)
-                .Distinct()
                 .ToListAsync();
+
+            // Get global identity roles
+            var identityRoles = await _userManager.GetRolesAsync(user);
+
+            var roles = projectRoles.Concat(identityRoles).Distinct().ToList();
 
             return new UserDto
             {
