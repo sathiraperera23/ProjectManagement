@@ -17,6 +17,12 @@ namespace TaskManagementApi.Application.DTOs.Auth
 
     public class AuthResponse
     {
+        public string Token { get; set; } = null!;
+        public int UserId { get; set; }
+        public string Email { get; set; } = null!;
+        public string DisplayName { get; set; } = null!;
+        public string Role { get; set; } = null!;
+        public PermissionsDto Permissions { get; set; } = null!;
         public string AccessToken { get; set; } = null!;
         public string RefreshToken { get; set; } = null!;
         public int ExpiresIn { get; set; }
@@ -31,6 +37,18 @@ namespace TaskManagementApi.Application.DTOs.Auth
         public string DisplayName { get; set; } = null!;
         public string? AvatarUrl { get; set; }
         public List<string> Roles { get; set; } = new();
+    }
+
+    public class PermissionsDto
+    {
+        public bool CanCreateProject { get; set; }
+        public bool CanEditProject { get; set; }
+        public bool CanDeleteProject { get; set; }
+        public bool CanAssignTickets { get; set; }
+        public bool CanManageUsers { get; set; }
+        public bool CanViewReports { get; set; }
+        public bool CanViewCosting { get; set; }
+        public bool CanApproveClientBugs { get; set; }
     }
 
     public class RefreshTokenRequest

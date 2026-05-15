@@ -142,9 +142,12 @@ namespace TaskManagementApi.Infrastructure.Services
 
         private async Task<AuthResponse> GenerateAuthResponseInternalAsync(User user, List<string> roles)
         {
+            var primaryRole = roles.Contains("Admin") ? "Admin"
+                : roles.Contains("ProjectManager") ? "ProjectManager"
+                : roles.FirstOrDefault() ?? "Developer";
 
             // Generate access token with roles
-            var accessToken = GenerateAccessToken(user, roles);
+            var accessToken = GenerateAccessToken(user, roles, primaryRole);
 
             // Generate refresh token
             var refreshToken = GenerateRefreshToken();
@@ -155,6 +158,12 @@ namespace TaskManagementApi.Infrastructure.Services
 
             return new AuthResponse
             {
+                Token = accessToken,
+                UserId = user.Id,
+                Email = user.Email ?? "",
+                DisplayName = user.DisplayName,
+                Role = primaryRole,
+                Permissions = DerivePermissions(primaryRole),
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
                 ExpiresIn = _jwtSettings.AccessTokenExpiryMinutes * 60,
@@ -169,7 +178,53 @@ namespace TaskManagementApi.Infrastructure.Services
             };
         }
 
-        private string GenerateAccessToken(User user, IEnumerable<string> roles)
+        private PermissionsDto DerivePermissions(string role)
+        {
+            if (role == "Admin")
+            {
+                return new PermissionsDto
+                {
+                    CanCreateProject = true,
+                    CanEditProject = true,
+                    CanDeleteProject = true,
+                    CanAssignTickets = true,
+                    CanManageUsers = true,
+                    CanViewReports = true,
+                    CanViewCosting = true,
+                    CanApproveClientBugs = true
+                };
+            }
+
+            if (role == "ProjectManager")
+            {
+                return new PermissionsDto
+                {
+                    CanCreateProject = true,
+                    CanEditProject = true,
+                    CanDeleteProject = false,
+                    CanAssignTickets = true,
+                    CanManageUsers = false,
+                    CanViewReports = true,
+                    CanViewCosting = true,
+                    CanApproveClientBugs = true
+                };
+            }
+
+            // Developer, QAEngineer, BusinessAnalyst
+            return new PermissionsDto
+            {
+                CanCreateProject = true, // for tickets
+                CanEditProject = false,
+                CanDeleteProject = false,
+                CanAssignTickets = false,
+                CanManageUsers = false,
+                CanViewReports = false,
+                CanViewCosting = false,
+                CanApproveClientBugs = false
+            };
+        }
+
+        private string GenerateAccessToken(User user, IEnumerable<string> roles, string primaryRole)
         {
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
@@ -181,6 +236,7 @@ namespace TaskManagementApi.Infrastructure.Services
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email ?? ""),
                 new Claim(ClaimTypes.Name, user.DisplayName),
+                new Claim(ClaimTypes.Role, primaryRole),
                 new Claim("sub", user.Id.ToString()),
                 new Claim("email", user.Email ?? ""),
                 new Claim("name", user.DisplayName),
@@ -188,7 +244,8 @@ namespace TaskManagementApi.Infrastructure.Services
 
             foreach (var role in roles)
             {
-                claims.Add(new Claim(ClaimTypes.Role, role));
+                if (role != primaryRole)
+                    claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
             var token = new JwtSecurityToken(
