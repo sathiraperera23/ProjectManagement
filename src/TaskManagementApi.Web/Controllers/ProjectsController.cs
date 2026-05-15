@@ -25,10 +25,10 @@ namespace TaskManagementApi.Web.Controllers
             _logger = logger;
         }
 
-        private Task<int> GetCurrentUserId()
+        private int GetCurrentUserId()
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.Parse(userIdStr!);
         }
 
         [HttpPost]
@@ -50,8 +50,7 @@ namespace TaskManagementApi.Web.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProjectResponse>>> GetProjects()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userId = int.Parse(userIdStr!);
+            var userId = GetCurrentUserId();
             var isAdminOrPm = User.IsInRole("Admin") || User.IsInRole("ProjectManager");
 
             var projects = await _projectService.GetAllProjectsAsync(isAdminOrPm ? null : userId);
@@ -64,8 +63,7 @@ namespace TaskManagementApi.Web.Controllers
             var isAdminOrPm = User.IsInRole("Admin") || User.IsInRole("ProjectManager");
             if (!isAdminOrPm)
             {
-                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var userId = int.Parse(userIdStr!);
+                var userId = GetCurrentUserId();
                 var isAssigned = await _projectService.IsUserAssignedToProjectAsync(userId, id);
                 if (!isAssigned)
                 {

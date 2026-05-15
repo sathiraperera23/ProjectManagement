@@ -22,10 +22,10 @@ namespace TaskManagementApi.Web.Controllers
             _accessService = accessService;
         }
 
-        private Task<int> GetCurrentUserId()
+        private int GetCurrentUserId()
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.Parse(userIdStr!);
         }
 
         // ── Time Logs ─────────────────────────────────────────
@@ -33,7 +33,7 @@ namespace TaskManagementApi.Web.Controllers
         [HttpPost("tickets/{ticketId}/time-logs")]
         public async Task<IActionResult> LogTime(int ticketId, [FromBody] CreateTimeLogRequest request)
         {
-            var log = await _reportService.LogTimeAsync(ticketId, request, await GetCurrentUserId());
+            var log = await _reportService.LogTimeAsync(ticketId, request, GetCurrentUserId());
             return Ok(log);
         }
 
@@ -47,22 +47,22 @@ namespace TaskManagementApi.Web.Controllers
         [HttpDelete("time-logs/{id}")]
         public async Task<IActionResult> DeleteTimeLog(int id)
         {
-            await _reportService.DeleteTimeLogAsync(id, await GetCurrentUserId());
+            await _reportService.DeleteTimeLogAsync(id, GetCurrentUserId());
             return NoContent();
         }
 
         // ── Budget ────────────────────────────────────────────
 
         [HttpPost("projects/{projectId}/budget")]
-        [RequirePermission(Permissions.ViewBudgetData)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> SetBudget(int projectId, [FromBody] SetProjectBudgetRequest request)
         {
-            await _reportService.SetBudgetAsync(projectId, request, await GetCurrentUserId());
+            await _reportService.SetBudgetAsync(projectId, request, GetCurrentUserId());
             return NoContent();
         }
 
         [HttpGet("projects/{projectId}/budget")]
-        [RequirePermission(Permissions.ViewBudgetData)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> GetBudget(int projectId)
         {
             var budget = await _reportService.GetBudgetAsync(projectId);
@@ -73,17 +73,15 @@ namespace TaskManagementApi.Web.Controllers
         // ── Reports ───────────────────────────────────────────
 
         [HttpGet("projects/{projectId}/reports/rtm")]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> GetRtm(int projectId, [FromQuery] int? subProjectId, [FromQuery] int? productId)
         {
-            // RBAC Check
-            var access = await _accessService.GetAccessLevelAsync(await GetCurrentUserId(), Domain.Entities.AccessComponentType.Report, projectId);
-            if (access == Domain.Entities.AccessLevel.NoAccess) return Forbid();
-
             var report = await _reportService.GetRtmReportAsync(projectId, subProjectId, productId);
             return Ok(report);
         }
 
         [HttpGet("projects/{projectId}/reports/dependency-matrix")]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> GetDependencyMatrix(int projectId, [FromQuery] int? subProjectId, [FromQuery] int? sprintId)
         {
             var report = await _reportService.GetDependencyMatrixAsync(projectId, subProjectId, sprintId);
@@ -91,7 +89,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpGet("projects/{projectId}/reports/costing")]
-        [RequirePermission(Permissions.ViewCostingData)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> GetCosting(int projectId, [FromQuery] int? subProjectId, [FromQuery] int? productId)
         {
             var report = await _reportService.GetCostingReportAsync(projectId, subProjectId, productId);
@@ -99,6 +97,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpGet("projects/{projectId}/reports/delays")]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> GetDelays(int projectId)
         {
             var report = await _reportService.GetDelayReportAsync(projectId);

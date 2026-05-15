@@ -21,10 +21,10 @@ namespace TaskManagementApi.Web.Controllers
             _roleService = roleService;
         }
 
-        private string GetCurrentUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value ?? "0";
+        private string GetCurrentUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0";
 
         [HttpPost]
-        [RequirePermission(Permissions.ManageUsers)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequest request)
         {
             var validator = new AssignRoleRequestValidator();
@@ -37,7 +37,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpDelete("{userId}")]
-        [RequirePermission(Permissions.ManageUsers)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RemoveRole(int projectId, int userId)
         {
             await _roleService.RemoveRoleFromUserAsync(userId, projectId, GetCurrentUserId());

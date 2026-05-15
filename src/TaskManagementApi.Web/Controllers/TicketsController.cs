@@ -15,23 +15,25 @@ namespace TaskManagementApi.Web.Controllers
     public class TicketsController : ControllerBase
     {
         private readonly ITicketService _ticketService;
+        private readonly IProjectService _projectService;
 
-        public TicketsController(ITicketService ticketService)
+        public TicketsController(ITicketService ticketService, IProjectService projectService)
         {
             _ticketService = ticketService;
+            _projectService = projectService;
         }
 
-        private Task<int> GetCurrentUserId()
+        private int GetCurrentUserId()
         {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
-            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.Parse(userIdStr!);
         }
 
         [HttpPost]
-        [RequirePermission(Permissions.CreateTicket)]
+        [Authorize(Roles = "Admin,ProjectManager,Developer,QAEngineer,BusinessAnalyst")]
         public async Task<ActionResult<TicketResponse>> CreateTicket(CreateTicketRequest request)
         {
-            var response = await _ticketService.CreateTicketAsync(request, await GetCurrentUserId());
+            var response = await _ticketService.CreateTicketAsync(request, GetCurrentUserId());
             return CreatedAtAction(nameof(GetTicket), new { id = response.Id }, response);
         }
 
@@ -43,6 +45,34 @@ namespace TaskManagementApi.Web.Controllers
             [FromQuery] int? milestoneId, [FromQuery] string? label,
             [FromQuery] DateTime? dueDateFrom, [FromQuery] DateTime? dueDateTo)
         {
+            var isAdminOrPm = User.IsInRole("Admin") || User.IsInRole("ProjectManager");
+            if (!isAdminOrPm)
+            {
+                var userId = GetCurrentUserId();
+                var projects = await _projectService.GetAllProjectsAsync(userId);
+                var assignedProjectIds = projects.Select(p => p.Id).ToList();
+
+                // If filtering by project, ensure it's allowed
+                if (projectId.HasValue && !assignedProjectIds.Contains(projectId.Value))
+                {
+                    return Ok(Enumerable.Empty<TicketResponse>());
+                }
+
+                // If not filtering by project, limit to assigned projects
+                if (!projectId.HasValue)
+                {
+                    var allAssignedTickets = new List<TicketResponse>();
+                    foreach (var pid in assignedProjectIds)
+                    {
+                        var projectTickets = await _ticketService.GetAllTicketsAsync(
+                            pid, productId, subProjectId, statusId, priority, category,
+                            assigneeId, teamId, sprintId, milestoneId, label, dueDateFrom, dueDateTo);
+                        allAssignedTickets.AddRange(projectTickets);
+                    }
+                    return Ok(allAssignedTickets);
+                }
+            }
+
             var tickets = await _ticketService.GetAllTicketsAsync(
                 projectId, productId, subProjectId, statusId, priority, category,
                 assigneeId, teamId, sprintId, milestoneId, label, dueDateFrom, dueDateTo);
@@ -54,24 +84,45 @@ namespace TaskManagementApi.Web.Controllers
         {
             var ticket = await _ticketService.GetTicketByIdAsync(id);
             if (ticket == null) return NotFound();
+
+            var isAdminOrPm = User.IsInRole("Admin") || User.IsInRole("ProjectManager");
+            if (!isAdminOrPm)
+            {
+                var userId = GetCurrentUserId();
+                var isAssigned = await _projectService.IsUserAssignedToProjectAsync(userId, ticket.ProjectId);
+                if (!isAssigned)
+                {
+                    return Forbid();
+                }
+            }
+
             return Ok(ticket);
         }
 
         [HttpPut("{id}")]
-        [RequirePermission(Permissions.EditAllTickets)]
         public async Task<IActionResult> UpdateTicket(int id, UpdateTicketRequest request)
         {
-            await _ticketService.UpdateTicketAsync(id, request, await GetCurrentUserId());
+            var userId = GetCurrentUserId();
+            var ticket = await _ticketService.GetTicketByIdAsync(id);
+            if (ticket == null) return NotFound();
+
+            var isAdminOrPm = User.IsInRole("Admin") || User.IsInRole("ProjectManager");
+            if (!isAdminOrPm && !ticket.AssigneeIds.Contains(userId))
+            {
+                return Forbid();
+            }
+
+            await _ticketService.UpdateTicketAsync(id, request, userId);
             return NoContent();
         }
 
         [HttpPut("{id}/status")]
-        [RequirePermission(Permissions.ChangeStatus)]
+        [Authorize(Roles = "Admin,ProjectManager,Developer,QAEngineer")]
         public async Task<IActionResult> UpdateTicketStatus(int id, UpdateTicketStatusRequest request)
         {
             try
             {
-                await _ticketService.UpdateTicketStatusAsync(id, request, await GetCurrentUserId());
+                await _ticketService.UpdateTicketStatusAsync(id, request, GetCurrentUserId());
                 return NoContent();
             }
             catch (Exception ex)
@@ -81,15 +132,15 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPut("{id}/assign")]
-        [RequirePermission(Permissions.ReassignTicket)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> AssignTicket(int id, [FromBody] List<int> assigneeIds)
         {
-            await _ticketService.AssignTicketAsync(id, assigneeIds, await GetCurrentUserId());
+            await _ticketService.AssignTicketAsync(id, assigneeIds, GetCurrentUserId());
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        [RequirePermission(Permissions.DeleteTicket)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> DeleteTicket(int id)
         {
             await _ticketService.SoftDeleteTicketAsync(id);
@@ -97,31 +148,31 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPut("bulk/status")]
-        [RequirePermission(Permissions.ChangeStatus)]
+        [Authorize(Roles = "Admin,ProjectManager,Developer,QAEngineer")]
         public async Task<IActionResult> BulkUpdateStatus(BulkUpdateStatusRequest request)
         {
-            await _ticketService.BulkUpdateStatusAsync(request, await GetCurrentUserId());
+            await _ticketService.BulkUpdateStatusAsync(request, GetCurrentUserId());
             return NoContent();
         }
 
         [HttpPut("bulk/assign")]
-        [RequirePermission(Permissions.ReassignTicket)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> BulkAssign(BulkAssignRequest request)
         {
-            await _ticketService.BulkAssignAsync(request, await GetCurrentUserId());
+            await _ticketService.BulkAssignAsync(request, GetCurrentUserId());
             return NoContent();
         }
 
         [HttpPut("bulk/priority")]
-        [RequirePermission(Permissions.EditAllTickets)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> BulkUpdatePriority(BulkUpdatePriorityRequest request)
         {
-            await _ticketService.BulkUpdatePriorityAsync(request, await GetCurrentUserId());
+            await _ticketService.BulkUpdatePriorityAsync(request, GetCurrentUserId());
             return NoContent();
         }
 
         [HttpPost("{id}/links")]
-        [RequirePermission(Permissions.EditAllTickets)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> LinkTickets(int id, LinkTicketRequest request)
         {
             await _ticketService.LinkTicketsAsync(id, request);
@@ -129,7 +180,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpDelete("{id}/links/{linkId}")]
-        [RequirePermission(Permissions.EditAllTickets)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> RemoveLink(int id, int linkId)
         {
             await _ticketService.RemoveLinkAsync(id, linkId);

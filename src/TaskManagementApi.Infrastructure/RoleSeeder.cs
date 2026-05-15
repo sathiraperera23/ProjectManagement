@@ -117,7 +117,7 @@ namespace TaskManagementApi.Infrastructure
                 },
                 new Role
                 {
-                    Name = "QA Engineer", IsSystem = true, IsDefault = false,
+                    Name = "QAEngineer", IsSystem = true, IsDefault = false,
                     CreatedAt = DateTime.UtcNow,
                     Description = "Quality assurance access",
                     RolePermissions = new List<RolePermission>
@@ -134,7 +134,7 @@ namespace TaskManagementApi.Infrastructure
                 },
                 new Role
                 {
-                    Name = "Business Analyst", IsSystem = true, IsDefault = false,
+                    Name = "BusinessAnalyst", IsSystem = true, IsDefault = false,
                     CreatedAt = DateTime.UtcNow,
                     Description = "Requirements management access",
                     RolePermissions = new List<RolePermission>
