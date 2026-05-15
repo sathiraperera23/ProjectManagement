@@ -15,21 +15,17 @@ namespace TaskManagementApi.Web.Controllers
     {
         private readonly IReportService _reportService;
         private readonly IAccessControlService _accessService;
-        private readonly IUserManagerFacade _userManager;
 
-        public ReportController(IReportService reportService, IAccessControlService accessService, IUserManagerFacade userManager)
+        public ReportController(IReportService reportService, IAccessControlService accessService)
         {
             _reportService = reportService;
             _accessService = accessService;
-            _userManager = userManager;
         }
 
-        private async Task<int> GetCurrentUserId()
+        private Task<int> GetCurrentUserId()
         {
-            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (providerId == null) return 0;
-            var user = await _userManager.FindByProviderIdAsync(providerId);
-            return user?.Id ?? 0;
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
         }
 
         // ── Time Logs ─────────────────────────────────────────

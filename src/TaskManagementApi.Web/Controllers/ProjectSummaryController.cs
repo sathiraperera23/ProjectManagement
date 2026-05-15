@@ -15,21 +15,17 @@ namespace TaskManagementApi.Web.Controllers
     {
         private readonly IProjectSummaryService _summaryService;
         private readonly IAccessControlService _accessService;
-        private readonly IUserManagerFacade _userManager;
 
-        public ProjectSummaryController(IProjectSummaryService summaryService, IAccessControlService accessService, IUserManagerFacade userManager)
+        public ProjectSummaryController(IProjectSummaryService summaryService, IAccessControlService accessService)
         {
             _summaryService = summaryService;
             _accessService = accessService;
-            _userManager = userManager;
         }
 
-        private async Task<int> GetCurrentUserId()
+        private Task<int> GetCurrentUserId()
         {
-            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (providerId == null) return 0;
-            var user = await _userManager.FindByProviderIdAsync(providerId);
-            return user?.Id ?? 0;
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
         }
 
         [HttpGet]
@@ -65,20 +61,16 @@ namespace TaskManagementApi.Web.Controllers
     public class AccessControlController : ControllerBase
     {
         private readonly IAccessControlService _accessService;
-        private readonly IUserManagerFacade _userManager;
 
-        public AccessControlController(IAccessControlService accessService, IUserManagerFacade userManager)
+        public AccessControlController(IAccessControlService accessService)
         {
             _accessService = accessService;
-            _userManager = userManager;
         }
 
-        private async Task<int> GetCurrentUserId()
+        private Task<int> GetCurrentUserId()
         {
-            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (providerId == null) return 0;
-            var user = await _userManager.FindByProviderIdAsync(providerId);
-            return user?.Id ?? 0;
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            return Task.FromResult(int.TryParse(userIdStr, out var id) ? id : 0);
         }
 
         [HttpGet("projects/{projectId}/access-rules")]
