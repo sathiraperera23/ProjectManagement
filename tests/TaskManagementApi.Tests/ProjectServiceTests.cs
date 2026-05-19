@@ -28,7 +28,7 @@ namespace TaskManagementApi.Tests
             var request = new CreateProjectRequest
             {
                 Name = projectName,
-                StartDate = DateTime.Now,
+                StartDate = DateTime.UtcNow,
                 Status = ProjectStatus.Active
             };
 

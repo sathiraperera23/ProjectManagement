@@ -56,8 +56,8 @@ namespace TaskManagementApi.Application.Services
                 StatusId = defaultStatus.Id,
                 TeamId = request.TeamId,
                 ReporterId = reporterId,
-                StartDate = request.StartDate,
-                ExpectedDueDate = request.ExpectedDueDate,
+                StartDate = request.StartDate.HasValue ? DateTime.SpecifyKind(request.StartDate.Value, DateTimeKind.Utc) : null,
+                ExpectedDueDate = request.ExpectedDueDate.HasValue ? DateTime.SpecifyKind(request.ExpectedDueDate.Value, DateTimeKind.Utc) : null,
                 StoryPoints = request.StoryPoints,
                 SprintId = request.SprintId,
                 MilestoneId = request.MilestoneId,
@@ -142,8 +142,8 @@ namespace TaskManagementApi.Application.Services
             ticket.Category = request.Category;
             ticket.Priority = request.Priority;
             ticket.TeamId = request.TeamId;
-            ticket.StartDate = request.StartDate;
-            ticket.ExpectedDueDate = request.ExpectedDueDate;
+            ticket.StartDate = request.StartDate.HasValue ? DateTime.SpecifyKind(request.StartDate.Value, DateTimeKind.Utc) : null;
+            ticket.ExpectedDueDate = request.ExpectedDueDate.HasValue ? DateTime.SpecifyKind(request.ExpectedDueDate.Value, DateTimeKind.Utc) : null;
             ticket.StoryPoints = request.StoryPoints;
             ticket.SprintId = request.SprintId;
             ticket.MilestoneId = request.MilestoneId;

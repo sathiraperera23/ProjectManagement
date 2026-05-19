@@ -50,7 +50,7 @@ namespace TaskManagementApi.Tests
             {
                 Type = NotificationEventType.TicketOverdue,
                 ReferenceId = 1,
-                RevisedDueDate = DateTime.Now.AddDays(1)
+                RevisedDueDate = DateTime.UtcNow.AddDays(1)
             };
 
             // Act

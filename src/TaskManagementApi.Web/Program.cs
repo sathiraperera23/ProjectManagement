@@ -160,14 +160,19 @@ using (var scope = app.Services.CreateScope())
 
     if (app.Environment.IsDevelopment() && !db.Users.Any(u => u.Email == "admin@admin.com"))
     {
-        var role = new Role
+        var role = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Admin");
+        if (role == null)
         {
-            Name = "Admin",
-            Description = "Seeded Admin Role",
-            IsSystem = true,
-            CreatedAt = DateTime.UtcNow
-        };
-        db.Roles.Add(role);
+            role = new Role
+            {
+                Name = "Admin",
+                Description = "Seeded Admin Role",
+                IsSystem = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            db.Roles.Add(role);
+            await db.SaveChangesAsync();
+        }
 
         var adminEmail = "admin@admin.com";
         var adminUser = new User

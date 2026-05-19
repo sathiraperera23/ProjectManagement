@@ -44,8 +44,8 @@ namespace TaskManagementApi.Application.Services
                 Description = request.Description,
                 ClientName = request.ClientName,
                 ProjectCode = projectCode,
-                StartDate = request.StartDate,
-                ExpectedEndDate = request.ExpectedEndDate,
+                StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc),
+                ExpectedEndDate = request.ExpectedEndDate.HasValue ? DateTime.SpecifyKind(request.ExpectedEndDate.Value, DateTimeKind.Utc) : null,
                 Status = request.Status,
                 AvatarUrl = request.AvatarUrl,
                 Colour = request.Colour
@@ -123,8 +123,8 @@ namespace TaskManagementApi.Application.Services
             {
                 project.ProjectCode = request.ProjectCode.ToUpper();
             }
-            project.StartDate = request.StartDate;
-            project.ExpectedEndDate = request.ExpectedEndDate;
+            project.StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc);
+            project.ExpectedEndDate = request.ExpectedEndDate.HasValue ? DateTime.SpecifyKind(request.ExpectedEndDate.Value, DateTimeKind.Utc) : null;
             project.Status = request.Status;
             project.AvatarUrl = request.AvatarUrl;
             project.Colour = request.Colour;
