@@ -37,7 +37,7 @@ namespace TaskManagementApi.Web.Controllers
         {
             try
             {
-                var response = await _projectService.CreateProjectAsync(request);
+                var response = await _projectService.CreateProjectAsync(request, GetCurrentUserId());
                 return CreatedAtAction(nameof(GetProject), new { id = response.Id }, response);
             }
             catch (Exception ex)

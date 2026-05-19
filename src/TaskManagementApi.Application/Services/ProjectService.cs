@@ -24,7 +24,7 @@ namespace TaskManagementApi.Application.Services
             _teamRepository = teamRepository;
         }
 
-        public async Task<ProjectResponse> CreateProjectAsync(CreateProjectRequest request)
+        public async Task<ProjectResponse> CreateProjectAsync(CreateProjectRequest request, int creatorId)
         {
             var projectCode = request.ProjectCode;
             if (string.IsNullOrWhiteSpace(projectCode))
@@ -58,6 +58,14 @@ namespace TaskManagementApi.Application.Services
 
             // Seed default teams
             await _userAdminService.SeedDefaultTeamsAsync(project.Id);
+
+            // Assign creator as PM
+            var pmTeam = await _teamRepository.Query()
+                .FirstOrDefaultAsync(t => t.ProjectId == project.Id && t.Name == "Project Management");
+            if (pmTeam != null)
+            {
+                await _userAdminService.AddMemberToTeamAsync(pmTeam.Id, creatorId);
+            }
 
             return MapToResponse(project);
         }

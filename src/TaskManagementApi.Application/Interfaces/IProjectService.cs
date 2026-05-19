@@ -4,7 +4,7 @@ namespace TaskManagementApi.Application.Interfaces
 {
     public interface IProjectService
     {
-        Task<ProjectResponse> CreateProjectAsync(CreateProjectRequest request);
+        Task<ProjectResponse> CreateProjectAsync(CreateProjectRequest request, int creatorId);
         Task<IEnumerable<ProjectResponse>> GetAllProjectsAsync(int? userId = null);
         Task<ProjectResponse?> GetProjectByIdAsync(int id);
         Task UpdateProjectAsync(int id, UpdateProjectRequest request);

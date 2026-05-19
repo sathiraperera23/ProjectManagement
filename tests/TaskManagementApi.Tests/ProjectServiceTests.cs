@@ -21,6 +21,9 @@ namespace TaskManagementApi.Tests
             var mockUserAdmin = new Mock<IUserAdminService>();
             var mockTeamRepo = new Mock<IRepository<Team>>();
             mockRepo.Setup(r => r.AddAsync(It.IsAny<Project>())).Returns(Task.CompletedTask);
+
+            mockTeamRepo.SetupAsyncQueryable(new List<Team>().AsQueryable());
+
             var service = new ProjectService(mockRepo.Object, mockStatusRepo.Object, mockUserAdmin.Object, mockTeamRepo.Object);
             var request = new CreateProjectRequest
             {
@@ -30,7 +33,7 @@ namespace TaskManagementApi.Tests
             };
 
             // Act
-            var result = await service.CreateProjectAsync(request);
+            var result = await service.CreateProjectAsync(request, 1);
 
             // Assert
             Assert.Equal(expectedCode, result.ProjectCode);
