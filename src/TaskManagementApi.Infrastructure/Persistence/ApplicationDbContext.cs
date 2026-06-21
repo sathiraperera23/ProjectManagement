@@ -125,6 +125,7 @@ namespace TaskManagementApi.Infrastructure.Persistence
             builder.Entity<RolePermission>().HasKey(rp => new { rp.RoleId, rp.PermissionId });
             builder.Entity<UserProjectRole>().HasIndex(upr => new { upr.UserId, upr.ProjectId }).IsUnique();
 
+            builder.Entity<Role>().HasMany(r => r.UserProjectRoles).WithOne(upr => upr.Role).HasForeignKey(upr => upr.RoleId);
             builder.Entity<Role>().HasMany(r => r.RolePermissions).WithOne(rp => rp.Role).HasForeignKey(rp => rp.RoleId);
             builder.Entity<Permission>().HasMany<RolePermission>().WithOne(rp => rp.Permission).HasForeignKey(rp => rp.PermissionId);
 

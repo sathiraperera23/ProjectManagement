@@ -10,15 +10,21 @@ namespace TaskManagementApi.Application.Services
         private readonly IRepository<Project> _projectRepository;
         private readonly IRepository<TicketStatus> _statusRepository;
         private readonly IUserAdminService _userAdminService;
+        private readonly IRepository<Team> _teamRepository;
 
-        public ProjectService(IRepository<Project> projectRepository, IRepository<TicketStatus> statusRepository, IUserAdminService userAdminService)
+        public ProjectService(
+            IRepository<Project> projectRepository,
+            IRepository<TicketStatus> statusRepository,
+            IUserAdminService userAdminService,
+            IRepository<Team> teamRepository)
         {
             _projectRepository = projectRepository;
             _statusRepository = statusRepository;
             _userAdminService = userAdminService;
+            _teamRepository = teamRepository;
         }
 
-        public async Task<ProjectResponse> CreateProjectAsync(CreateProjectRequest request)
+        public async Task<ProjectResponse> CreateProjectAsync(CreateProjectRequest request, int creatorId)
         {
             var projectCode = request.ProjectCode;
             if (string.IsNullOrWhiteSpace(projectCode))
@@ -38,8 +44,8 @@ namespace TaskManagementApi.Application.Services
                 Description = request.Description,
                 ClientName = request.ClientName,
                 ProjectCode = projectCode,
-                StartDate = request.StartDate,
-                ExpectedEndDate = request.ExpectedEndDate,
+                StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc),
+                ExpectedEndDate = request.ExpectedEndDate.HasValue ? DateTime.SpecifyKind(request.ExpectedEndDate.Value, DateTimeKind.Utc) : null,
                 Status = request.Status,
                 AvatarUrl = request.AvatarUrl,
                 Colour = request.Colour
@@ -52,6 +58,14 @@ namespace TaskManagementApi.Application.Services
 
             // Seed default teams
             await _userAdminService.SeedDefaultTeamsAsync(project.Id);
+
+            // Assign creator as PM
+            var pmTeam = await _teamRepository.Query()
+                .FirstOrDefaultAsync(t => t.ProjectId == project.Id && t.Name == "Project Management");
+            if (pmTeam != null)
+            {
+                await _userAdminService.AddMemberToTeamAsync(pmTeam.Id, creatorId);
+            }
 
             return MapToResponse(project);
         }
@@ -72,9 +86,22 @@ namespace TaskManagementApi.Application.Services
             }
         }
 
-        public async Task<IEnumerable<ProjectResponse>> GetAllProjectsAsync()
+        public async Task<IEnumerable<ProjectResponse>> GetAllProjectsAsync(int? userId = null)
         {
-            var projects = await _projectRepository.GetAllAsync();
+            IQueryable<Project> query = _projectRepository.Query();
+
+            if (userId.HasValue)
+            {
+                var assignedProjectIds = await _teamRepository.Query()
+                    .Where(t => t.Members.Any(m => m.UserId == userId.Value))
+                    .Select(t => t.ProjectId)
+                    .Distinct()
+                    .ToListAsync();
+
+                query = query.Where(p => assignedProjectIds.Contains(p.Id));
+            }
+
+            var projects = await query.ToListAsync();
             return projects.Select(MapToResponse);
         }
 
@@ -96,8 +123,8 @@ namespace TaskManagementApi.Application.Services
             {
                 project.ProjectCode = request.ProjectCode.ToUpper();
             }
-            project.StartDate = request.StartDate;
-            project.ExpectedEndDate = request.ExpectedEndDate;
+            project.StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc);
+            project.ExpectedEndDate = request.ExpectedEndDate.HasValue ? DateTime.SpecifyKind(request.ExpectedEndDate.Value, DateTimeKind.Utc) : null;
             project.Status = request.Status;
             project.AvatarUrl = request.AvatarUrl;
             project.Colour = request.Colour;
@@ -123,6 +150,13 @@ namespace TaskManagementApi.Application.Services
         public async Task AssignTeamOrUserAsync(int id, int? teamId, int? userId)
         {
             await Task.CompletedTask;
+        }
+
+        public async Task<bool> IsUserAssignedToProjectAsync(int userId, int projectId)
+        {
+            return await _teamRepository.Query()
+                .Where(t => t.ProjectId == projectId)
+                .AnyAsync(t => t.Members.Any(m => m.UserId == userId));
         }
 
         private ProjectResponse MapToResponse(Project project)

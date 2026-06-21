@@ -121,9 +121,9 @@ namespace TaskManagementApi.Tests
         {
             // Arrange
             var projectId = 1;
-            var s1 = new Sprint { ProjectId = projectId, Status = SprintStatus.Closed, ClosedAt = DateTime.Now.AddDays(-14), Tickets = new List<Ticket>
+            var s1 = new Sprint { ProjectId = projectId, Status = SprintStatus.Closed, ClosedAt = DateTime.UtcNow.AddDays(-14), Tickets = new List<Ticket>
                 { new Ticket { StoryPoints = 5, Status = new TicketStatus { IsTerminal = true } } } };
-            var s2 = new Sprint { ProjectId = projectId, Status = SprintStatus.Closed, ClosedAt = DateTime.Now.AddDays(-7), Tickets = new List<Ticket>
+            var s2 = new Sprint { ProjectId = projectId, Status = SprintStatus.Closed, ClosedAt = DateTime.UtcNow.AddDays(-7), Tickets = new List<Ticket>
                 { new Ticket { StoryPoints = 10, Status = new TicketStatus { IsTerminal = true } } } };
 
             var sprints = new List<Sprint> { s1, s2 }.AsQueryable();

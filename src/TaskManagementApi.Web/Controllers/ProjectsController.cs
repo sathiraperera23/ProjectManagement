@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using TaskManagementApi.Web.Authorization;
 using TaskManagementApi.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace TaskManagementApi.Web.Controllers
 {
@@ -15,32 +16,28 @@ namespace TaskManagementApi.Web.Controllers
     {
         private readonly IProjectService _projectService;
         private readonly IAccessControlService _accessService;
-        private readonly IUserManagerFacade _userManager;
         private readonly ILogger<ProjectsController> _logger;
 
-        public ProjectsController(IProjectService projectService, IAccessControlService accessService, IUserManagerFacade userManager, ILogger<ProjectsController> logger)
+        public ProjectsController(IProjectService projectService, IAccessControlService accessService, ILogger<ProjectsController> logger)
         {
             _projectService = projectService;
             _accessService = accessService;
-            _userManager = userManager;
             _logger = logger;
         }
 
-        private async Task<int> GetCurrentUserId()
+        private int GetCurrentUserId()
         {
-            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (providerId == null) return 0;
-            var user = await _userManager.FindByProviderIdAsync(providerId);
-            return user?.Id ?? 0;
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.Parse(userIdStr!);
         }
 
         [HttpPost]
-        [RequirePermission(Permissions.CreateProject)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<ActionResult<ProjectResponse>> CreateProject(CreateProjectRequest request)
         {
             try
             {
-                var response = await _projectService.CreateProjectAsync(request);
+                var response = await _projectService.CreateProjectAsync(request, GetCurrentUserId());
                 return CreatedAtAction(nameof(GetProject), new { id = response.Id }, response);
             }
             catch (Exception ex)
@@ -51,19 +48,28 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpGet]
-        [RequirePermission(Permissions.ViewAllProjects)]
         public async Task<ActionResult<IEnumerable<ProjectResponse>>> GetProjects()
         {
-            var projects = await _projectService.GetAllProjectsAsync();
+            var userId = GetCurrentUserId();
+            var isAdminOrPm = User.IsInRole("Admin") || User.IsInRole("ProjectManager");
+
+            var projects = await _projectService.GetAllProjectsAsync(isAdminOrPm ? null : userId);
             return Ok(projects);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ProjectResponse>> GetProject(int id)
         {
-            // RBAC Check
-            var access = await _accessService.GetAccessLevelAsync(await GetCurrentUserId(), Domain.Entities.AccessComponentType.Project, id);
-            if (access == Domain.Entities.AccessLevel.NoAccess) return Forbid();
+            var isAdminOrPm = User.IsInRole("Admin") || User.IsInRole("ProjectManager");
+            if (!isAdminOrPm)
+            {
+                var userId = GetCurrentUserId();
+                var isAssigned = await _projectService.IsUserAssignedToProjectAsync(userId, id);
+                if (!isAssigned)
+                {
+                    return StatusCode(403, "You do not have access to this project");
+                }
+            }
 
             var project = await _projectService.GetProjectByIdAsync(id);
             if (project == null) return NotFound();
@@ -71,7 +77,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPut("{id}")]
-        [RequirePermission(Permissions.EditProject)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> UpdateProject(int id, UpdateProjectRequest request)
         {
             await _projectService.UpdateProjectAsync(id, request);
@@ -79,7 +85,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPut("{id}/archive")]
-        [RequirePermission(Permissions.ArchiveProject)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> ArchiveProject(int id)
         {
             await _projectService.ArchiveProjectAsync(id);
@@ -87,7 +93,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpDelete("{id}")]
-        [RequirePermission(Permissions.DeleteProject)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProject(int id)
         {
             await _projectService.SoftDeleteProjectAsync(id);
@@ -95,7 +101,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPost("{id}/teams")]
-        [RequirePermission(Permissions.EditProject)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> AssignTeamOrUser(int id, [FromQuery] int? teamId, [FromQuery] int? userId)
         {
             await _projectService.AssignTeamOrUserAsync(id, teamId, userId);

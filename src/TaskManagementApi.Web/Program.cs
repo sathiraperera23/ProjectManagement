@@ -5,10 +5,10 @@ using TaskManagementApi.Application.Interfaces;
 using TaskManagementApi.Application.Services;
 using TaskManagementApi.Infrastructure.Repositories;
 using TaskManagementApi.Infrastructure.Services;
-using TaskManagementApi.Infrastructure.Auth;
 using TaskManagementApi.Infrastructure;
 using TaskManagementApi.Web.Authorization;
 using TaskManagementApi.Web.Hubs;
+using TaskManagementApi.Application.DTOs.Auth;
 using Microsoft.AspNetCore.Identity;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -17,6 +17,11 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
+using System.Text;
+using System.IdentityModel.Tokens.Jwt;
+
+// Disable default claim mapping to keep original JWT claims like 'sub' and 'role'
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,33 +50,39 @@ builder.Services.AddIdentity<User, Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// 2. Keycloak JWT Bearer validation
-var keycloakUrl = builder.Configuration["Keycloak:AuthServerUrl"];
-var realm = builder.Configuration["Keycloak:Realm"];
-var clientId = builder.Configuration["Keycloak:ClientId"];
+// JWT Settings
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings"));
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+// JWT Authentication
+var jwtSettings = builder.Configuration
+    .GetSection("JwtSettings").Get<JwtSettings>();
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.Authority = $"{keycloakUrl}/realms/{realm}";
-        options.Audience = clientId;
-        options.RequireHttpsMetadata = false; // set true in production
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true
-        };
-    });
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings?.Issuer,
+        ValidAudience = jwtSettings?.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(jwtSettings?.SecretKey ?? "development_only_secret_key_32_chars_long")),
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
 builder.Services.AddAuthorization();
 
-// 3. Keycloak role converter
-builder.Services.AddSingleton<IClaimsTransformation, KeycloakJwtRoleConverter>();
-
-// 4. Register KeycloakAuthService with HttpClient
-builder.Services.AddHttpClient<IKeycloakAuthService, KeycloakAuthService>();
+// Register AuthService
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Services
 builder.Services.AddScoped<IRoleService, RoleService>();
@@ -90,7 +101,6 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ISubProjectService, SubProjectService>();
 builder.Services.AddScoped<ISprintService, SprintService>();
-builder.Services.AddScoped<IUserManagerFacade, UserManagerFacade>();
 builder.Services.AddScoped<ITicketExtraService, TicketExtraService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<INotificationHubService, NotificationHubService>();
@@ -143,9 +153,46 @@ var app = builder.Build();
 // Data seeding
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var services = scope.ServiceProvider;
+    var db = services.GetRequiredService<ApplicationDbContext>();
     // await db.Database.MigrateAsync();
     await RoleSeeder.SeedAsync(db);
+
+    if (app.Environment.IsDevelopment() && !db.Users.Any(u => u.Email == "admin@admin.com"))
+    {
+        var role = await db.Roles.FirstOrDefaultAsync(r => r.Name == "Admin");
+        if (role == null)
+        {
+            role = new Role
+            {
+                Name = "Admin",
+                Description = "Seeded Admin Role",
+                IsSystem = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            db.Roles.Add(role);
+            await db.SaveChangesAsync();
+        }
+
+        var adminEmail = "admin@admin.com";
+        var adminUser = new User
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            DisplayName = "System Admin",
+            EmailConfirmed = true,
+            IsActive = true,
+            Provider = "local",
+            ProviderId = adminEmail,
+            CreatedAt = DateTime.UtcNow,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123")
+        };
+        db.Users.Add(adminUser);
+        await db.SaveChangesAsync();
+
+        db.UserRoles.Add(new IdentityUserRole<int> { UserId = adminUser.Id, RoleId = role.Id });
+        await db.SaveChangesAsync();
+    }
 }
 
 // Configure the HTTP request pipeline.

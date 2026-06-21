@@ -29,12 +29,20 @@ namespace TaskManagementApi.Infrastructure.Repositories
 
         public async Task AddAsync(T entity)
         {
+            if (entity is BaseEntity baseEntity)
+            {
+                baseEntity.CreatedAt = DateTime.UtcNow;
+            }
             await _dbSet.AddAsync(entity);
             await _context.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(T entity)
         {
+            if (entity is BaseEntity baseEntity)
+            {
+                baseEntity.UpdatedAt = DateTime.UtcNow;
+            }
             _dbSet.Update(entity);
             await _context.SaveChangesAsync();
         }

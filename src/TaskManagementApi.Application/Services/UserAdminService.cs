@@ -105,7 +105,7 @@ namespace TaskManagementApi.Application.Services
 
         public async Task SeedDefaultTeamsAsync(int projectId)
         {
-            var defaults = new[] { "Development", "QA", "BA", "DevOps", "Design" };
+            var defaults = new[] { "Project Management", "Development", "QA", "BA", "DevOps", "Design" };
             foreach (var name in defaults)
             {
                 await CreateTeamAsync(projectId, new CreateTeamRequest { Name = name });

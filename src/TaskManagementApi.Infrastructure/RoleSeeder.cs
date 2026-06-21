@@ -57,7 +57,7 @@ namespace TaskManagementApi.Infrastructure
             {
                 new Role
                 {
-                    Name = "Administrator", IsSystem = true, IsDefault = false,
+                    Name = "Admin", IsSystem = true, IsDefault = false,
                     CreatedAt = DateTime.UtcNow,
                     Description = "Full system access",
                     RolePermissions = permissions
@@ -66,7 +66,7 @@ namespace TaskManagementApi.Infrastructure
                 },
                 new Role
                 {
-                    Name = "Project Manager", IsSystem = true, IsDefault = false,
+                    Name = "ProjectManager", IsSystem = true, IsDefault = false,
                     CreatedAt = DateTime.UtcNow,
                     Description = "Full project management access",
                     RolePermissions = new List<RolePermission>
@@ -117,7 +117,7 @@ namespace TaskManagementApi.Infrastructure
                 },
                 new Role
                 {
-                    Name = "QA Engineer", IsSystem = true, IsDefault = false,
+                    Name = "QAEngineer", IsSystem = true, IsDefault = false,
                     CreatedAt = DateTime.UtcNow,
                     Description = "Quality assurance access",
                     RolePermissions = new List<RolePermission>
@@ -134,7 +134,7 @@ namespace TaskManagementApi.Infrastructure
                 },
                 new Role
                 {
-                    Name = "Business Analyst", IsSystem = true, IsDefault = false,
+                    Name = "BusinessAnalyst", IsSystem = true, IsDefault = false,
                     CreatedAt = DateTime.UtcNow,
                     Description = "Requirements management access",
                     RolePermissions = new List<RolePermission>

@@ -38,8 +38,8 @@ namespace TaskManagementApi.Application.Services
                 ProjectId = projectId,
                 ProductId = request.ProductId,
                 SubProjectId = request.SubProjectId,
-                StartDate = request.StartDate,
-                EndDate = request.EndDate,
+                StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc),
+                EndDate = DateTime.SpecifyKind(request.EndDate, DateTimeKind.Utc),
                 StoryPointCapacity = request.StoryPointCapacity,
                 Status = SprintStatus.Planning,
                 CreatedByUserId = userId,
@@ -83,8 +83,8 @@ namespace TaskManagementApi.Application.Services
 
             sprint.Name = request.Name;
             sprint.Goal = request.Goal;
-            sprint.StartDate = request.StartDate;
-            sprint.EndDate = request.EndDate;
+            sprint.StartDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc);
+            sprint.EndDate = DateTime.SpecifyKind(request.EndDate, DateTimeKind.Utc);
             sprint.StoryPointCapacity = request.StoryPointCapacity;
             sprint.UpdatedAt = DateTime.UtcNow;
 

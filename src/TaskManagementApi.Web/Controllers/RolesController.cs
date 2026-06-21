@@ -21,7 +21,7 @@ namespace TaskManagementApi.Web.Controllers
             _roleService = roleService;
         }
 
-        private string GetCurrentUserId() => User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0";
+        private string GetCurrentUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value ?? "0";
 
         [HttpGet]
         [RequirePermission(Permissions.ManageRoles)]

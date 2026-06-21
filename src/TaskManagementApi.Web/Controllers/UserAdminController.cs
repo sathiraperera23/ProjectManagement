@@ -14,32 +14,28 @@ namespace TaskManagementApi.Web.Controllers
     public class UserAdminController : ControllerBase
     {
         private readonly IUserAdminService _adminService;
-        private readonly IUserManagerFacade _userManager;
 
-        public UserAdminController(IUserAdminService adminService, IUserManagerFacade userManager)
+        public UserAdminController(IUserAdminService adminService)
         {
             _adminService = adminService;
-            _userManager = userManager;
         }
 
-        private async Task<int> GetCurrentUserId()
+        private int GetCurrentUserId()
         {
-            var providerId = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (providerId == null) return 0;
-            var user = await _userManager.FindByProviderIdAsync(providerId);
-            return user?.Id ?? 0;
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.Parse(userIdStr!);
         }
 
         [HttpPost("invite")]
-        [RequirePermission(Permissions.ManageUsers)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Invite([FromBody] InviteUserRequest request)
         {
-            var invitation = await _adminService.InviteUserAsync(request, await GetCurrentUserId());
+            var invitation = await _adminService.InviteUserAsync(request, GetCurrentUserId());
             return Ok(invitation);
         }
 
         [HttpGet("invitations")]
-        [RequirePermission(Permissions.ManageUsers)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetPendingInvitations()
         {
             var items = await _adminService.GetPendingInvitationsAsync();
@@ -47,7 +43,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpDelete("invitations/{id}")]
-        [RequirePermission(Permissions.ManageUsers)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RevokeInvitation(int id)
         {
             await _adminService.RevokeInvitationAsync(id);
@@ -63,7 +59,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpGet]
-        [RequirePermission(Permissions.ManageUsers)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> GetAll()
         {
             var users = await _adminService.GetAllUsersAsync();
@@ -79,15 +75,15 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPut("{id}/deactivate")]
-        [RequirePermission(Permissions.ManageUsers)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Deactivate(int id)
         {
-            await _adminService.DeactivateUserAsync(id, await GetCurrentUserId());
+            await _adminService.DeactivateUserAsync(id, GetCurrentUserId());
             return NoContent();
         }
 
         [HttpPut("{id}/reactivate")]
-        [RequirePermission(Permissions.ManageUsers)]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Reactivate(int id)
         {
             await _adminService.ReactivateUserAsync(id);
@@ -97,21 +93,21 @@ namespace TaskManagementApi.Web.Controllers
         [HttpPut("me/profile")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
         {
-            await _adminService.UpdateProfileAsync(await GetCurrentUserId(), request);
+            await _adminService.UpdateProfileAsync(GetCurrentUserId(), request);
             return NoContent();
         }
 
         [HttpPut("me/mobile")]
         public async Task<IActionResult> SubmitMobile([FromQuery] string mobile)
         {
-            await _adminService.SubmitMobileAsync(await GetCurrentUserId(), mobile);
+            await _adminService.SubmitMobileAsync(GetCurrentUserId(), mobile);
             return NoContent();
         }
 
         [HttpPost("me/mobile/verify")]
         public async Task<IActionResult> VerifyMobile([FromQuery] string code)
         {
-            var success = await _adminService.VerifyMobileAsync(await GetCurrentUserId(), code);
+            var success = await _adminService.VerifyMobileAsync(GetCurrentUserId(), code);
             return success ? Ok() : BadRequest("Invalid code");
         }
     }
@@ -129,7 +125,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPost]
-        [RequirePermission(Permissions.ManageUsers)]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> CreateTeam(int projectId, [FromBody] CreateTeamRequest request)
         {
             var team = await _adminService.CreateTeamAsync(projectId, request);
@@ -144,6 +140,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> UpdateTeam(int id, [FromBody] CreateTeamRequest request)
         {
             await _adminService.UpdateTeamAsync(id, request);
@@ -151,6 +148,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> DeleteTeam(int id)
         {
             await _adminService.DeleteTeamAsync(id);
@@ -158,6 +156,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpPost("{id}/members")]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> AddMember(int id, [FromQuery] int userId)
         {
             await _adminService.AddMemberToTeamAsync(id, userId);
@@ -165,6 +164,7 @@ namespace TaskManagementApi.Web.Controllers
         }
 
         [HttpDelete("{id}/members/{userId}")]
+        [Authorize(Roles = "Admin,ProjectManager")]
         public async Task<IActionResult> RemoveMember(int id, int userId)
         {
             await _adminService.RemoveMemberFromTeamAsync(id, userId);
